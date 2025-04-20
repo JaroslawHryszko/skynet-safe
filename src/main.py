@@ -391,15 +391,15 @@ class SkynetSystem:
         topic = random.choice(topics)
         
         # Internet search
-        search_results = self.internet.search(topic)
+        search_results = self.internet.search_information(topic)
         
         if search_results:
             # Process results and add as discoveries
             for result in search_results[:2]:  # Limit to 2 results for efficiency
                 discovery = {
                     "topic": topic,
-                    "content": result["snippet"],
-                    "source": result["url"],
+                    "content": result.get("body", ""),
+                    "source": result.get("href", ""),
                     "timestamp": datetime.now().timestamp(),
                     "importance": random.uniform(0.5, 1.0)  # Random importance (to be improved)
                 }

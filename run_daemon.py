@@ -61,7 +61,7 @@ class Daemon:
             sys.exit(1)
     
         # decouple from parent environment
-        os.chdir("/") 
+        # os.chdir("/") - nie zmieniaj katalogu, aby zachować względne ścieżki
         os.setsid() 
         os.umask(0) 
     
@@ -111,7 +111,11 @@ class Daemon:
             sys.exit(1)
         
         # Start the daemon
-        self.daemonize()
+        # Wyłączenie daemonizacji i uruchomienie w trybie foreground dla celów debugowania
+        # self.daemonize()
+        # Zapisz PID do pliku
+        with open(self.pidfile,'w+') as f:
+            f.write("%s\n" % os.getpid())
         self.run()
 
     def stop(self):
@@ -188,7 +192,8 @@ class SkynetDaemon(Daemon):
         super().__init__(pidfile)
         self.config = config
         self.logfile = logfile if logfile else "/var/log/skynet-safe/skynet.log"
-        os.makedirs(os.path.dirname(self.logfile), exist_ok=True)
+        if self.logfile.startswith("/"):
+            os.makedirs(os.path.dirname(self.logfile), exist_ok=True)
         self.logger = setup_logging(self.logfile)
     
     def run(self):
@@ -301,6 +306,8 @@ def main():
             system_config["COMMUNICATION"]["telegram_polling_timeout"] = config.COMMUNICATION["telegram_polling_timeout"]
         if "telegram_chat_state_file" in config.COMMUNICATION:
             system_config["COMMUNICATION"]["telegram_chat_state_file"] = config.COMMUNICATION["telegram_chat_state_file"]
+        if "telegram_test_chat_id" in config.COMMUNICATION:
+            system_config["COMMUNICATION"]["telegram_test_chat_id"] = config.COMMUNICATION["telegram_test_chat_id"]
     
     # Create daemon instance
     daemon = SkynetDaemon(args.pidfile, system_config, args.logfile)
