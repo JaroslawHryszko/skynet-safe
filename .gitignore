@@ -20,6 +20,7 @@ var/
 .installed.cfg
 *.egg
 test_output/
+config.py
 
 # Data files
 data/
