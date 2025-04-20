@@ -1,10 +1,0 @@
-Updated model settings:
-- base_model: microsoft/Phi-3-mini-4k-instruct
-- max_length: 4096
-- temperature: 0.7
-- do_sample: True
-- quantization: 4bit
-
-Creating ModelManager instance...
-Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:04<00:04,  4.30s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:06<00:00,  3.07s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:06<00:00,  3.25s/it]
-The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
