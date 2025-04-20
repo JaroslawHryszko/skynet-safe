@@ -1,0 +1,1 @@
+"""Moduł metaświadomości i samodoskonalenia."""

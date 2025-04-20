@@ -1,0 +1,12 @@
+<string>:66: SyntaxWarning: invalid escape sequence '\!'
+Testing model from config: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Model loaded successfully in 5.97 seconds
+Testing prompt: "What is artificial intelligence?"
+Generation completed in 2.99 seconds
+Generated text:
+What is artificial intelligence? How are its applications used in the transportation sector, and what are its future potentials?
+Testing prompt: "Explain the concept of meta-awareness in AI systems"
+Generation completed in 3.67 seconds
+Generated text:
+Explain the concept of meta-awareness in AI systems and how it can be applied to enhance the system's intelligence. Provide specific examples of how meta-awareness has been used in AI systems and its impact on their performance.
+System model tests passed successfully\!

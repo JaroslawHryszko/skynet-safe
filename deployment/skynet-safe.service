@@ -1,0 +1,20 @@
+[Unit]
+Description=SKYNET-SAFE AI System
+After=network.target
+
+[Service]
+Type=forking
+User=skynet
+Group=skynet
+WorkingDirectory=/opt/skynet-safe
+ExecStart=/usr/bin/python3 /opt/skynet-safe/run_daemon.py start --platform signal
+ExecStop=/usr/bin/python3 /opt/skynet-safe/run_daemon.py stop
+PIDFile=/tmp/skynet-safe/skynet.pid
+Restart=on-failure
+RestartSec=5s
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=skynet-safe
+
+[Install]
+WantedBy=multi-user.target

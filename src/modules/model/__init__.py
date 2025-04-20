@@ -1,0 +1,1 @@
+"""Pakiet zarządzania modelem językowym."""

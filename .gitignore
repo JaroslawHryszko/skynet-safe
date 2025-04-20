@@ -1,0 +1,60 @@
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Data files
+data/
+*.json
+
+# Log files
+*.log
+
+# Environment files
+.env
+.venv
+venv/
+ENV/
+
+# IDE/editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Tensorboard directories
+runs/
+
+# Model files and checkpoints
+*.pt
+*.pth
+*.ckpt
+*.bin
+
+# Model directories (files can be large)
+models/
+
+# Cache files
+.cache/

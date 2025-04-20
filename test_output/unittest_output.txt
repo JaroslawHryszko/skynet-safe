@@ -1,0 +1,7 @@
+<string>:19: SyntaxWarning: invalid escape sequence '\!'
+Traceback (most recent call last):
+  File "<string>", line 12, in <module>
+ImportError: cannot import name 'TestModelManager' from 'src.tests.test_model_manager' (/home/jarek/skynet-safe/src/tests/test_model_manager.py). Did you mean: 'ModelManager'?
+Running basic unit tests with the updated model configuration...
+Running model manager tests...
+Error running tests: cannot import name 'TestModelManager' from 'src.tests.test_model_manager' (/home/jarek/skynet-safe/src/tests/test_model_manager.py)

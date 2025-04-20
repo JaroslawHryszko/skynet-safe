@@ -1,0 +1,6 @@
+2025-04-19 15:21:11,114 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego TinyLlama/TinyLlama-1.1B-Chat-v1.0...
+2025-04-19 15:21:11,114 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-19 15:21:18,020 - src.modules.model.model_manager - INFO - Model TinyLlama/TinyLlama-1.1B-Chat-v1.0 załadowany pomyślnie
+/home/jarek/miniconda3/lib/python3.12/site-packages/transformers/generation/configuration_utils.py:631: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.7` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+  warnings.warn(
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.

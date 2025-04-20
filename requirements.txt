@@ -1,0 +1,31 @@
+# Basic dependencies
+torch>=2.0.0
+transformers>=4.30.0
+bitsandbytes>=0.39.0  # For model quantization
+sentence-transformers>=2.2.2  # For embeddings
+chromadb>=0.4.6  # Vector database
+accelerate>=0.20.0  # For memory usage optimization
+
+# For internet and communication modules
+requests>=2.28.0  # Used by both internet module and Telegram communicator
+duckduckgo-search>=3.8.0
+beautifulsoup4>=4.11.0
+
+# For learning module (Phase 2)
+datasets>=2.12.0
+scikit-learn>=1.2.2
+peft>=0.4.0  # Parameter-Efficient Fine-Tuning
+
+# For Signal communication module
+# Note: signal-cli requires external installation - see README.md
+
+# For testing
+pytest>=7.3.1
+
+# Additional tools
+python-dotenv>=1.0.0  # For loading environment variables from .env file
+tqdm>=4.65.0
+numpy>=1.24.0
+loguru>=0.7.0
+pyyaml>=6.0
+psutil>=5.9.0  # For system monitoring and configuration testing
