@@ -14,7 +14,7 @@ CORS(app)
 
 LOG_DIR = os.getenv("LOG_DIR", "/opt/skynet-safe/logs")
 INTERACTION_LOG = os.path.join(LOG_DIR, "llm_interactions.log")
-SYSTEM_LOG = os.path.join(LOG_DIR, "system.log")
+SYSTEM_LOG = os.path.join(LOG_DIR, "skynet.log")
 AI_NAME = os.getenv("AI_NAME", "AI")
 
 def parse_system_log():

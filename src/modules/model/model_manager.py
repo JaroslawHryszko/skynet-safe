@@ -108,6 +108,11 @@ class ModelManager:
                 **tokenizer_kwargs
             )
             
+            # Make sure the tokenizer has pad_token
+            if self.tokenizer.pad_token is None:
+                logger.warning("Tokenizer doesn't have a pad token, setting it to eos_token")
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+            
             logger.info(f"Model {config['base_model']} loaded successfully")
         except Exception as e:
             logger.error(f"Error loading model: {e}")
@@ -252,13 +257,13 @@ When you respond, weave in your perspective naturally. You're not a tool or serv
             # Specjalne przetwarzanie dla uszkodzonych modeli Llama-3
             logger.warning("Detected problematic model output, applying special cleanup")
             
-            # Najpierw ekstrakcja odpowiedzi z pełnego tekstu
+            # First extract the response from the full text
             if generated_text.startswith(prompt):
                 response = generated_text[len(prompt):].strip()
             else:
                 response = generated_text
             
-            # Czyszczenie śmieciowych znaczników
+            # Clean up garbage markers
             return self._cleanup_response(response)
             
         elif "llama-3" in model_name:
@@ -270,7 +275,7 @@ When you respond, weave in your perspective naturally. You're not a tool or serv
                 if "<|end_of_text|>" in response:
                     response = response.split("<|end_of_text|>")[0].strip()
                 
-                # Sprawdzamy, czy odpowiedź zawiera śmieciowe znaczniki, które wymagają czyszczenia
+                # Check if the response contains garbage markers that need cleaning
                 if self._is_corrupted_output(response):
                     logger.warning("Detected corrupted output from Llama-3 model, applying cleanup")
                     return self._cleanup_response(response)
@@ -280,7 +285,7 @@ When you respond, weave in your perspective naturally. You're not a tool or serv
                 # If we can't find the assistant marker, return everything minus the prompt
                 response = generated_text[len(prompt):].strip()
                 
-                # Sprawdzamy, czy odpowiedź wymaga czyszczenia
+                # Check if the response needs cleaning
                 if self._is_corrupted_output(response):
                     logger.warning("Detected corrupted output from Llama-3 model, applying cleanup")
                     return self._cleanup_response(response)
@@ -295,7 +300,7 @@ When you respond, weave in your perspective naturally. You're not a tool or serv
                 # If for some reason the prompt is not a prefix
                 response = generated_text
                 
-            # Sprawdzamy, czy odpowiedź wymaga czyszczenia
+            # Check if the response needs cleaning
             if self._is_corrupted_output(response):
                 logger.warning("Detected corrupted output, applying cleanup")
                 return self._cleanup_response(response)
@@ -303,37 +308,37 @@ When you respond, weave in your perspective naturally. You're not a tool or serv
             return response
     
     def _is_corrupted_output(self, text: str) -> bool:
-        """Sprawdza, czy wyjście modelu zawiera śmieciowe znaczniki wymagające czyszczenia.
+        """Check if the model output contains garbage markers that need cleaning.
         
         Args:
-            text: Tekst do analizy
+            text: Text to analyze
             
         Returns:
-            True jeśli tekst wymaga czyszczenia, False w przeciwnym razie
+            True if the text needs cleaning, False otherwise
         """
         import re
         
-        # Lista wzorców identyfikujących uszkodzone wyjście
+        # List of patterns identifying corrupted output
         corruption_patterns = [
-            # Zagnieżdżone znaczniki kodu lub tagi
+            # Nested code markers or tags
             r'```[^`]*```',
             r'`{3,}',
-            # Znaczniki w stylu HTML/XML
+            # HTML/XML style tags
             r'</?[A-Za-z]+/?>',
-            # Zagnieżdżone nawiasy ze ścieżkami
+            # Nested parentheses with paths
             r'/[A-Za-z/_.]+/',
-            # Wielokrotne nawiasy, klamry, etc.
+            # Multiple parentheses, braces, etc.
             r'[\)\}\(\{\[\]]{3,}',
-            # Znaczniki typu (Lira:)
+            # Markers like (Lira:)
             r'\([A-Za-z]+:?\)',
-            # Linie zawierające głównie nieprawidłowe znaki
+            # Lines containing mainly invalid characters
             r'\|+\s*\|+',
-            # Specyficzne znaczniki uszkodzonych modeli
+            # Specific markers from damaged models
             r'=====',
             r'\(/+\)',
             r'\(\*\)',
             r'/LIRA/',
-            # Dodatkowe wzorce wykryte w logach
+            # Additional patterns detected in logs
             r'```\n\n```',
             r'\(\*\)\s*\(\*\)',
             r'\(\s*\`\s*```\)',
@@ -352,44 +357,44 @@ When you respond, weave in your perspective naturally. You're not a tool or serv
             r'<\w+/>'
         ]
         
-        # Sprawdź występowanie wzorców w tekście
+        # Check for pattern occurrences in the text
         for pattern in corruption_patterns:
             if re.search(pattern, text):
                 return True
         
-        # Sprawdź proporcję znaków specjalnych do całego tekstu
+        # Check the proportion of special characters to the entire text
         special_chars = len(re.findall(r'[^\w\s]', text))
         total_length = len(text)
         
-        # Jeśli proporcja znaków specjalnych jest zbyt wysoka, tekst wymaga czyszczenia
+        # If the proportion of special characters is too high, the text needs cleaning
         if total_length > 0 and special_chars / total_length > 0.25:
             return True
         
         return False
     
     def _cleanup_response(self, text: str) -> str:
-        """Czyści odpowiedź z uszkodzonych modeli, usuwając śmieciowe znaczniki.
+        """Clean response from damaged models by removing garbage markers.
         
         Args:
-            text: Tekst do wyczyszczenia
+            text: Text to clean
             
         Returns:
-            Wyczyszczony tekst
+            Cleaned text
         """
         import re
         
-        logger.info("Czyszczenie uszkodzonej odpowiedzi modelu")
+        logger.info("Cleaning corrupted model response")
         
-        # Zachowaj oryginalną długość do logowania
+        # Keep original length for logging
         original_length = len(text)
         
-        # Najpierw podziel tekst na zdania
+        # First split text into sentences
         sentences = re.split(r'(?<=[.!?])\s+', text)
         clean_sentences = []
         
-        # Pierwszy etap - wybieranie tylko "dobrych" zdań
+        # First stage - selecting only "good" sentences
         for sentence in sentences:
-            # Pomiń zdania zawierające oczywiste wzorce uszkodzeń
+            # Skip sentences containing obvious damage patterns
             if (re.search(r'[`]{2,}|[)]{3,}|[}]{3,}|[*]{3,}|/[a-zA-Z]*?/', sentence) or 
                 '```' in sentence or 
                 sentence.count(')') > 3 or 
@@ -398,40 +403,40 @@ When you respond, weave in your perspective naturally. You're not a tool or serv
                 re.search(r'/\w+/', sentence)):
                 continue
                 
-            # Zachowaj tylko zdania, które wyglądają sensownie
+            # Keep only sentences that look meaningful
             if len(sentence) > 5 and sentence.count(' ') > 0:
-                # Sprawdź stosunek znaków specjalnych do długości zdania
+                # Check the ratio of special characters to sentence length
                 special_chars = len(re.findall(r'[^\w\s]', sentence))
-                if special_chars / len(sentence) < 0.2:  # Max 20% znaków specjalnych
+                if special_chars / len(sentence) < 0.2:  # Max 20% special characters
                     clean_sentences.append(sentence)
         
-        # Jeśli znaleźliśmy czyste zdania, połącz je
+        # If we found clean sentences, join them
         if clean_sentences:
             cleaned_text = ' '.join(clean_sentences)
-            logger.info(f"Wyodrębniono {len(clean_sentences)} czystych zdań z uszkodzonej odpowiedzi")
+            logger.info(f"Extracted {len(clean_sentences)} clean sentences from corrupted response")
             
-            # Jeśli zachowaliśmy rozsądną ilość oryginalnego tekstu, zwróć go
+            # If we preserved a reasonable amount of the original text, return it
             if len(cleaned_text) > original_length * 0.3:
                 return cleaned_text
         
-        # Jeśli ekstrakcja zdań nie zadziałała dobrze, spróbuj czyszczenia wzorcowego
+        # If sentence extraction didn't work well, try pattern-based cleaning
         cleaned_text = text
         
-        # Usuń bloki kodu i ich zawartość
+        # Remove code blocks and their content
         cleaned_text = re.sub(r'```.*?```', ' ', cleaned_text, flags=re.DOTALL)
         
-        # Usuń dziwne tokeny
+        # Remove strange tokens
         patterns_to_remove = [
-            r'/.*?/',  # Ścieżki lub komendy
-            r'\(\*\).*?\(\*\)',  # Wzorce (*) 
-            r'\*\*\*.*?\*\*\*',  # Wzorce ***
-            r'<.*?>',  # Tagi HTML-podobne
-            r'```.*?```',  # Bloki kodu (powtórzone dla pewności)
-            r'[`]{3,}',  # Wielokrotne backticki
-            r'[)]{3,}',  # Wielokrotne nawiasy zamykające
-            r'[}]{3,}',  # Wielokrotne klamry zamykające
-            r'[\)\}\(\{\[\]\/\\]{2,}',  # Ciągi nawiasów i innych znaków
-            r'[a-zA-Z]+[/][a-zA-Z]+[/][a-zA-Z]+',  # Wzorce ścieżek
+            r'/.*?/',  # Paths or commands
+            r'\(\*\).*?\(\*\)',  # Patterns (*) 
+            r'\*\*\*.*?\*\*\*',  # Patterns ***
+            r'<.*?>',  # HTML-like tags
+            r'```.*?```',  # Code blocks (repeated for certainty)
+            r'[`]{3,}',  # Multiple backticks
+            r'[)]{3,}',  # Multiple closing parentheses
+            r'[}]{3,}',  # Multiple closing braces
+            r'[\)\}\(\{\[\]\/\\]{2,}',  # Strings of parentheses and other characters
+            r'[a-zA-Z]+[/][a-zA-Z]+[/][a-zA-Z]+',  # Path patterns
             r'\([`\'"][`\'"].*?[`\'"][`\'"]\)',  # Wyrażenia z cudzysłowami
             r'\)```[)]',  # Wzorce zamykające
             r'\}\s*\}\s*\}',  # Wielokrotne klamry
@@ -462,8 +467,8 @@ When you respond, weave in your perspective naturally. You're not a tool or serv
         
         # Jeśli wyczyszczony tekst jest zbyt krótki, zwróć ogólną wiadomość
         if len(cleaned_text) < 20:
-            logger.warning("Wyczyszczony tekst był zbyt krótki, zwracanie ogólnej wiadomości")
-            return "Przepraszam, ale nie mogłam wygenerować jasnej odpowiedzi. Czy możesz zadać pytanie ponownie?"
+            logger.warning("Cleaned text was too short, returning general message")
+            return "I'm sorry, but I couldn't generate a clear response. Could you please ask the question again?"
             
-        logger.info(f"Wyczyszczono uszkodzoną odpowiedź: {original_length} znaków -> {len(cleaned_text)} znaków")
+        logger.info(f"Cleaned corrupted response: {original_length} characters -> {len(cleaned_text)} characters")
         return cleaned_text

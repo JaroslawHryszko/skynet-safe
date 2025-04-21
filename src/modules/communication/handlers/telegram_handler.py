@@ -1,4 +1,4 @@
-"""Handler wiadomości dla platformy Telegram."""
+"""Message handler for Telegram platform."""
 
 import logging
 import time
@@ -13,70 +13,70 @@ logger = logging.getLogger("SKYNET-SAFE.TelegramHandler")
 
 
 class TelegramHandler(MessageHandler):
-    """Handler wiadomości dla platformy Telegram używający Telegram Bot API.
+    """Message handler for Telegram platform using Telegram Bot API.
     
-    Wykorzystuje Telegram Bot API do komunikacji z użytkownikami Telegram.
+    Uses Telegram Bot API to communicate with Telegram users.
     """
     
     def __init__(self, config: Dict[str, Any]):
-        """Inicjalizacja handlera Telegram.
+        """Initialize Telegram handler.
         
         Args:
-            config: Konfiguracja dla handlera Telegram zawierająca bot_token i inne parametry
+            config: Configuration for the Telegram handler containing bot_token and other parameters
         """
         super().__init__(config)
-        logger.info("Inicjalizacja handlera wiadomości Telegram...")
+        logger.info("Initializing Telegram message handler...")
         
-        # Pobranie konfiguracji
+        # Get configuration
         self.bot_token = config.get("telegram_bot_token")
         if not self.bot_token:
-            raise ValueError("Brak tokenu bota w konfiguracji Telegram")
+            raise ValueError("Missing bot token in Telegram configuration")
             
         self.api_url = f"https://api.telegram.org/bot{self.bot_token}"
         self.polling_timeout = config.get("telegram_polling_timeout", 30)
         self.allowed_users = config.get("telegram_allowed_users", [])
         self.chat_state_file = config.get("telegram_chat_state_file", "./data/telegram/chat_state.json")
         
-        # Tworzenie katalogów jeśli nie istnieją
+        # Create directories if they don't exist
         os.makedirs(os.path.dirname(self.chat_state_file), exist_ok=True)
         
-        # Inicjalizacja stanu chatu
+        # Initialize chat state
         self.chats = {}
         self.load_chat_state()
         
-        # Ostatnio widziany update_id
+        # Last seen update_id
         self.last_update_id = 0
         
-        # Sprawdzenie czy bot działa
+        # Check if the bot is working
         try:
             response = requests.get(f"{self.api_url}/getMe")
             if response.status_code == 200:
                 bot_info = response.json()
                 if bot_info.get("ok"):
                     bot_name = bot_info["result"].get("username")
-                    logger.info(f"Bot Telegram połączony pomyślnie: @{bot_name}")
+                    logger.info(f"Telegram Bot connected successfully: @{bot_name}")
                 else:
-                    logger.error(f"Błąd połączenia z API Telegram: {bot_info.get('description')}")
-                    raise ConnectionError(f"Błąd API Telegram: {bot_info.get('description')}")
+                    logger.error(f"Error connecting to Telegram API: {bot_info.get('description')}")
+                    raise ConnectionError(f"Telegram API error: {bot_info.get('description')}")
             else:
-                logger.error(f"Błąd połączenia z API Telegram: {response.status_code}")
-                raise ConnectionError(f"Błąd połączenia z API Telegram: {response.status_code}")
+                logger.error(f"Error connecting to Telegram API: {response.status_code}")
+                raise ConnectionError(f"Error connecting to Telegram API: {response.status_code}")
         except Exception as e:
-            logger.error(f"Błąd podczas inicjalizacji bota Telegram: {e}")
+            logger.error(f"Error during Telegram bot initialization: {e}")
             raise
         
-        logger.info("Handler wiadomości Telegram zainicjalizowany pomyślnie")
+        logger.info("Telegram message handler initialized successfully")
     
     def get_new_messages(self) -> List[Dict[str, Any]]:
-        """Pobranie nowych wiadomości z Telegram.
+        """Get new messages from Telegram.
         
         Returns:
-            Lista nowych wiadomości w formacie [{"sender": str, "content": str, "timestamp": int}]
+            List of new messages in format [{"sender": str, "content": str, "timestamp": int}]
         """
         messages = []
         
         try:
-            # Pobranie aktualizacji z API Telegram
+            # Get updates from Telegram API
             params = {
                 "offset": self.last_update_id + 1,
                 "timeout": self.polling_timeout,
@@ -85,13 +85,13 @@ class TelegramHandler(MessageHandler):
             
             response = requests.get(f"{self.api_url}/getUpdates", params=params)
             if response.status_code != 200:
-                logger.error(f"Błąd podczas pobierania aktualizacji: {response.status_code}")
+                logger.error(f"Error while getting updates: {response.status_code}")
                 return messages
             
             updates = response.json()
             
             if not updates.get("ok"):
-                logger.error(f"Błąd API Telegram: {updates.get('description')}")
+                logger.error(f"Telegram API error: {updates.get('description')}")
                 return messages
             
             for update in updates.get("result", []):
@@ -103,31 +103,31 @@ class TelegramHandler(MessageHandler):
                 
                 message = update["message"]
                 
-                # Sprawdzenie czy wiadomość zawiera tekst
+                # Check if message contains text
                 if "text" not in message:
                     continue
                 
-                # Pobranie informacji o nadawcy
+                # Get sender information
                 chat_id = str(message.get("chat", {}).get("id", ""))
                 user_id = str(message.get("from", {}).get("id", ""))
                 username = message.get("from", {}).get("username", "")
                 first_name = message.get("from", {}).get("first_name", "")
                 last_name = message.get("from", {}).get("last_name", "")
                 
-                # Sprawdzenie czy użytkownik jest na liście dozwolonych (jeśli lista istnieje)
+                # Check if user is on the allowed list (if the list exists)
                 if self.allowed_users and user_id not in self.allowed_users:
-                    logger.warning(f"Odrzucono wiadomość od nieautoryzowanego użytkownika: {user_id} ({username})")
+                    logger.warning(f"Rejected message from unauthorized user: {user_id} ({username})")
                     continue
                 
-                # Dodanie użytkownika do listy znanych chatów
+                # Add user to the list of known chats
                 self._add_chat(chat_id, user_id, username, first_name, last_name)
                 
-                # Dodanie wiadomości do listy
+                # Add message to the list
                 timestamp = message.get("date", int(time.time()))
                 content = message.get("text", "")
                 
                 messages.append({
-                    "sender": chat_id,  # Używamy chat_id jako identyfikatora nadawcy
+                    "sender": chat_id,  # We use chat_id as the sender identifier
                     "content": content,
                     "timestamp": timestamp,
                     "metadata": {
@@ -139,62 +139,90 @@ class TelegramHandler(MessageHandler):
                 })
             
             if messages:
-                logger.info(f"Odebrano {len(messages)} nowych wiadomości z Telegram")
-                # Zapisanie aktualizacji stanu chatów
+                logger.info(f"Received {len(messages)} new messages from Telegram")
+                # Save chat state updates
                 self.save_chat_state()
                 
         except Exception as e:
-            logger.error(f"Błąd podczas pobierania wiadomości z Telegram: {e}")
+            logger.error(f"Error while getting messages from Telegram: {e}")
         
         return messages
     
     def send_message(self, recipient: str, content: str) -> bool:
-        """Wysłanie wiadomości do odbiorcy przez Telegram.
+        # Telegram has a message limit around 4096 characters
+        max_message_length = 4000  # Safe limit
+        
+        # If message is longer than the limit, split it into parts
+        if len(content) > max_message_length:
+            # Split message into parts
+            message_parts = []
+            for i in range(0, len(content), max_message_length):
+                part = content[i:i + max_message_length]
+                message_parts.append(part)
+            
+            logger.info(f"Message split into {len(message_parts)} parts")
+            
+            # Send each part separately
+            all_sent = True
+            for i, part in enumerate(message_parts):
+                if not self._send_single_message(recipient, part):
+                    all_sent = False
+                # Short delay between messages to avoid API limits
+                if i < len(message_parts) - 1:
+                    time.sleep(0.5)
+            
+            return all_sent
+        else:
+            # Standard sending for short message
+            return self._send_single_message(recipient, content)
+            
+    def _send_single_message(self, recipient: str, content: str) -> bool:
+        """Send message to recipient via Telegram.
         
         Args:
-            recipient: Identyfikator odbiorcy (chat_id)
-            content: Treść wiadomości
+            recipient: Recipient identifier (chat_id)
+            content: Message content
             
         Returns:
-            True, jeśli wysłanie się powiodło, False w przeciwnym wypadku
+            True if sending was successful, False otherwise
         """
         try:
-            # Przygotowanie danych do wysłania
+            # Prepare data to send
             payload = {
                 "chat_id": recipient,
                 "text": content,
-                "parse_mode": "HTML"  # Możliwość formatowania HTML
+                "parse_mode": "HTML"  # Allow HTML formatting
             }
             
-            # Wysłanie wiadomości przez API Telegram
+            # Send message via Telegram API
             response = requests.post(f"{self.api_url}/sendMessage", json=payload)
             
             if response.status_code != 200:
-                logger.error(f"Błąd podczas wysyłania wiadomości: {response.status_code}")
+                logger.error(f"Sending message for recipient ID: {recipient}, ERROR: {response.status_code}")
                 return False
             
             result = response.json()
             
             if not result.get("ok"):
-                logger.error(f"Błąd API Telegram: {result.get('description')}")
+                logger.error(f"Telegram API error: {result.get('description')}")
                 return False
             
-            logger.info(f"Wysłano wiadomość przez Telegram do {recipient}")
+            logger.info(f"Message sent via Telegram to {recipient}")
             return True
             
         except Exception as e:
-            logger.error(f"Błąd podczas wysyłania wiadomości przez Telegram: {e}")
+            logger.error(f"Error while sending message via Telegram: {e}")
             return False
     
     def _add_chat(self, chat_id: str, user_id: str, username: str, first_name: str, last_name: str) -> None:
-        """Dodaje lub aktualizuje informacje o chacie.
+        """Add or update chat information.
         
         Args:
-            chat_id: ID chatu
-            user_id: ID użytkownika
-            username: Nazwa użytkownika
-            first_name: Imię użytkownika
-            last_name: Nazwisko użytkownika
+            chat_id: Chat ID
+            user_id: User ID
+            username: Username
+            first_name: User's first name
+            last_name: User's last name
         """
         self.chats[chat_id] = {
             "user_id": user_id,
@@ -205,26 +233,26 @@ class TelegramHandler(MessageHandler):
         }
     
     def load_chat_state(self) -> None:
-        """Wczytuje stan chatów z pliku."""
+        """Load chat state from file."""
         if os.path.exists(self.chat_state_file):
             try:
                 with open(self.chat_state_file, 'r') as f:
                     self.chats = json.load(f)
-                logger.info(f"Wczytano stan {len(self.chats)} chatów z {self.chat_state_file}")
+                logger.info(f"Loaded state of {len(self.chats)} chats from {self.chat_state_file}")
             except Exception as e:
-                logger.error(f"Błąd podczas wczytywania stanu chatów: {e}")
+                logger.error(f"Error while loading chat state: {e}")
     
     def save_chat_state(self) -> None:
-        """Zapisuje stan chatów do pliku."""
+        """Save chat state to file."""
         try:
             with open(self.chat_state_file, 'w') as f:
                 json.dump(self.chats, f, indent=2)
-            logger.debug(f"Zapisano stan {len(self.chats)} chatów do {self.chat_state_file}")
+            logger.debug(f"Saved state of {len(self.chats)} chats to {self.chat_state_file}")
         except Exception as e:
-            logger.error(f"Błąd podczas zapisywania stanu chatów: {e}")
+            logger.error(f"Error while saving chat state: {e}")
     
     def close(self) -> None:
-        """Zamknięcie połączenia z Telegram i sprzątanie zasobów."""
-        # Zapisanie stanu chatów przed zamknięciem
+        """Close Telegram connection and cleanup resources."""
+        # Save chat state before closing
         self.save_chat_state()
-        logger.info("Zamknięcie handlera Telegram")
+        logger.info("Telegram handler closed")

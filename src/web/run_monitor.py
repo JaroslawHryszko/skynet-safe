@@ -22,7 +22,7 @@ if __name__ == '__main__':
     port = int(os.getenv('WEB_PORT', 5000))
     
     print(f"Starting SKYNET-SAFE Activity Monitor on port {port}")
-    print("Access the monitor at http://localhost:{port}")
+    print(f"Access the monitor at http://localhost:{port}")
     print("Press Ctrl+C to stop")
     
     app.run(debug=False, host='0.0.0.0', port=port)
