@@ -34,6 +34,8 @@ data/
 .venv
 venv/
 ENV/
+*.pid
+<*
 
 # IDE/editor files
 .idea/
@@ -41,6 +43,7 @@ ENV/
 *.swp
 *.swo
 *~
+CLAUDE.md
 
 # System files
 .DS_Store
