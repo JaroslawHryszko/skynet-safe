@@ -299,8 +299,12 @@ def main():
                       help='Communication platform (console, signal, telegram)')
     parser.add_argument('--web', action='store_true',
                       help='Start the web interface alongside the daemon')
-    parser.add_argument('--web-port', type=int, default=5000,
-                      help='Port for the web interface (default: 5000)')
+    # Load default port from config
+    from src.config import config
+    default_web_port = config.WEB_INTERFACE.get("port", 7860)
+    
+    parser.add_argument('--web-port', type=int, default=default_web_port,
+                      help=f'Port for the web interface (default: {default_web_port})')
     
     args = parser.parse_args()
     
@@ -382,8 +386,17 @@ def main():
         env = os.environ.copy()
         env['WEB_PORT'] = str(port)
         
+        # Get host from config
+        host = config.WEB_INTERFACE.get("host", "0.0.0.0")
+        host = os.getenv("WEB_HOST", host)
+        
         # Start web interface in a new process
-        print(f"Starting web interface on port {port}...")
+        print(f"Starting web interface on {host}:{port}...")
+        
+        # Set environment variables for web interface
+        env['WEB_PORT'] = str(port)
+        env['WEB_HOST'] = host
+        
         if args.action == 'foreground':
             # For foreground mode, use a separate process group
             web_process = subprocess.Popen([sys.executable, monitor_script],
@@ -404,7 +417,10 @@ def main():
             f.write(f"{web_process.pid}\n")
         
         print(f"Web interface started with PID {web_process.pid}")
-        print(f"Access the web interface at http://localhost:{port}")
+        if host == "0.0.0.0":
+            print(f"Access the web interface at http://localhost:{port}")
+        else:
+            print(f"Access the web interface at http://{host}:{port}")
         return web_process.pid
 
     # Perform requested action

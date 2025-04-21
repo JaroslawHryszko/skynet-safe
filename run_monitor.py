@@ -17,12 +17,23 @@ load_dotenv()
 if __name__ == '__main__':
     # Import here to ensure environment is properly set up
     from src.web.skynet_activity_monitor import app
+    from src.config import config
     
-    # Get port from environment variable or use default
-    port = int(os.getenv('WEB_PORT', 5000))
+    # Get host and port from config
+    host = config.WEB_INTERFACE.get("host", "0.0.0.0")
+    port = config.WEB_INTERFACE.get("port", 7860)
+    debug = config.WEB_INTERFACE.get("debug", False)
     
-    print(f"Starting SKYNET-SAFE Activity Monitor on port {port}")
-    print(f"Access the monitor at http://localhost:{port}")
+    # Allow override via environment variables
+    host = os.getenv("WEB_HOST", host)
+    port = int(os.getenv("WEB_PORT", port))
+    debug = os.getenv("WEB_DEBUG", str(debug)).lower() in ('true', '1', 't')
+    
+    print(f"Starting SKYNET-SAFE Activity Monitor on {host}:{port}")
+    if host == "0.0.0.0":
+        print(f"Access the monitor at http://localhost:{port}")
+    else:
+        print(f"Access the monitor at http://{host}:{port}")
     print("Press Ctrl+C to stop")
     
-    app.run(debug=False, host='0.0.0.0', port=port)
+    app.run(debug=debug, host=host, port=port)

@@ -116,4 +116,18 @@ def get_status():
 if __name__ == '__main__':
     # Create templates directory if it doesn't exist
     os.makedirs(os.path.join(os.path.dirname(__file__), 'templates'), exist_ok=True)
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    
+    # Import config here to avoid circular imports
+    from src.config import config
+    
+    # Get host and port from config
+    host = config.WEB_INTERFACE.get("host", "0.0.0.0")
+    port = config.WEB_INTERFACE.get("port", 7860)
+    debug = config.WEB_INTERFACE.get("debug", False)
+    
+    # Allow override via environment variables
+    host = os.getenv("WEB_HOST", host)
+    port = int(os.getenv("WEB_PORT", port))
+    debug = os.getenv("WEB_DEBUG", str(debug)).lower() in ('true', '1', 't')
+    
+    app.run(debug=debug, host=host, port=port)
