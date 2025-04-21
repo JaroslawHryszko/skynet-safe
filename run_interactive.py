@@ -8,17 +8,27 @@ import os
 import logging
 import time
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from src.main import SkynetSystem
 from src.config import config
 from src.modules.communication.handlers.console_handler import ConsoleHandler
 
 # Logger configuration
+log_dir = os.getenv("LOG_DIR", "/opt/skynet-safe/logs")
+log_file_path = os.path.join(log_dir, "skynet_interactive.log")
+
+# Ensure log directory exists
+os.makedirs(log_dir, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("skynet_interactive.log"),
+        logging.FileHandler(log_file_path),
         logging.StreamHandler()
     ]
 )
@@ -33,6 +43,7 @@ def setup_environment():
     
     # Modify configuration for interactive mode
     interactive_config = {
+        "SYSTEM_SETTINGS": config.SYSTEM_SETTINGS,
         "MODEL": config.MODEL,
         "MEMORY": config.MEMORY,
         "COMMUNICATION": {
@@ -79,6 +90,25 @@ def main():
         print(" SKYNET-SAFE Interactive Mode ".center(70, "="))
         print("="*70)
         print(" Type 'exit' or 'quit' to end the session ".center(70, "-"))
+        
+        # Display status of security and ethics systems
+        security_status = []
+        if not interactive_config["SYSTEM_SETTINGS"].get("enable_security_system", True):
+            security_status.append("SecuritySystemManager: DISABLED")
+        if not interactive_config["SYSTEM_SETTINGS"].get("enable_ethical_framework", True):
+            security_status.append("EthicalFrameworkManager: DISABLED")
+        if not interactive_config["SYSTEM_SETTINGS"].get("enable_development_monitor", True):
+            security_status.append("DevelopmentMonitorManager: DISABLED")
+        if not interactive_config["SYSTEM_SETTINGS"].get("enable_external_validation", True):
+            security_status.append("ExternalValidationManager: DISABLED")
+            
+        if security_status:
+            print("\n" + "!"*70)
+            print(" WARNING: Security/Ethics Components Disabled ".center(70, "!"))
+            for status in security_status:
+                print(f" - {status}".center(70))
+            print("!"*70)
+        
         print("="*70 + "\n")
         
         # Main interaction loop

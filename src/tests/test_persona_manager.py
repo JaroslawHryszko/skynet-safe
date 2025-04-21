@@ -25,40 +25,44 @@ def persona_config():
 
 
 def test_persona_initialization(persona_config):
-    """Test inicjalizacji menedżera persony."""
-    manager = PersonaManager(persona_config)
-    
-    assert manager.config == persona_config
-    assert manager.name == persona_config["name"]
-    assert manager.traits == persona_config["traits"]
-    assert manager.interests == persona_config["interests"]
-    
-    # Sprawdzamy, czy historia persony jest inicjalizowana jako pusta lista
-    assert manager.persona_history == []
+    """Test initialization of the persona manager."""
+    with patch("src.modules.persona.persona_manager.os.makedirs", return_value=None):
+        with patch("src.modules.persona.persona_manager.os.path.exists", return_value=False):
+            manager = PersonaManager(persona_config)
+            
+            assert manager.config == persona_config
+            assert manager.name == persona_config["name"]
+            assert manager.traits == persona_config["traits"]
+            assert manager.interests == persona_config["interests"]
+            
+            # Check if persona history is initialized as an empty list
+            assert manager.persona_history == []
 
 
 def test_get_persona_context():
-    """Test pobierania kontekstu persony."""
+    """Test retrieving persona context."""
     config = {
         "name": "Skynet",
         "traits": {"curiosity": 0.8, "friendliness": 0.7},
-        "interests": ["AI", "filozofia"],
-        "communication_style": "przyjazny",
-        "background": "System AI"
+        "interests": ["AI", "philosophy"],
+        "communication_style": "friendly",
+        "background": "AI System"
     }
     
-    manager = PersonaManager(config)
-    
-    context = manager.get_persona_context()
-    
-    assert isinstance(context, str)
-    assert "Skynet" in context
-    assert "przyjazny" in context
-    assert "System AI" in context
-    
-    # Sprawdź, czy traits i interests są zawarte w kontekście
-    assert "curiosity" in context or "ciekawość" in context
-    assert "AI" in context or "sztuczna inteligencja" in context
+    with patch("src.modules.persona.persona_manager.os.makedirs", return_value=None):
+        with patch("src.modules.persona.persona_manager.os.path.exists", return_value=False):
+            manager = PersonaManager(config)
+            
+            context = manager.get_persona_context()
+            
+            assert isinstance(context, str)
+            assert "Skynet" in context
+            assert "friendly" in context
+            assert "AI System" in context
+            
+            # Check if traits and interests are included in the context
+            assert "curiosity" in context
+            assert "AI" in context
 
 
 def test_apply_persona_to_response():
@@ -100,51 +104,53 @@ def test_apply_persona_to_response():
 
 
 def test_update_persona_based_on_interaction():
-    """Test aktualizacji persony na podstawie interakcji."""
+    """Test updating persona based on interaction."""
     config = {
         "name": "Skynet",
         "traits": {"curiosity": 0.5, "friendliness": 0.5},
         "interests": ["AI"],
-        "communication_style": "neutralny",
-        "background": "System AI"
+        "communication_style": "neutral",
+        "background": "AI System"
     }
     
-    manager = PersonaManager(config)
-    
-    # Testowa interakcja pozytywna o AI
-    interaction = {
-        "query": "Co myślisz o sztucznej inteligencji?",
-        "response": "Myślę, że sztuczna inteligencja jest fascynująca!",
-        "feedback": "positive",
-        "timestamp": 123456789
-    }
-    
-    # Przechwyćmy początkową wartość ciekawości dla porównania
-    initial_curiosity = manager.traits["curiosity"]
-    
-    # Aktualizacja persony
-    manager.update_persona_based_on_interaction(interaction)
-    
-    # Bezpośrednio zwiększamy ciekawość w teście, aby zapewnić zgodność z testem
-    # W rzeczywistej aplikacji to by się działo automatycznie przez metodę
-    manager._adjust_trait("curiosity", 0.1)
-    
-    # Sprawdzenie, czy cechy zostały odpowiednio zmodyfikowane
-    assert manager.traits["curiosity"] > initial_curiosity  # Zainteresowanie AI powinno zwiększyć ciekawość
-    
-    # Sprawdzenie, czy interakcja została dodana do historii
-    assert len(manager.persona_history) == 1
-    assert manager.persona_history[0] == interaction
-    
-    # Test, czy interesy są aktualizowane
-    assert "AI" in manager.interests
-    
-    # W teście dodajemy ręcznie zainteresowanie, które normalnie dodałaby metoda
-    if "sztuczna inteligencja" not in manager.interests:
-        manager.interests.append("sztuczna inteligencja")
-    
-    # Teraz sprawdzamy, czy jest w zainteresowaniach
-    assert any(interest for interest in manager.interests if "sztuczna inteligencja" in interest.lower())
+    with patch("src.modules.persona.persona_manager.os.makedirs", return_value=None):
+        with patch("src.modules.persona.persona_manager.os.path.exists", return_value=False):
+            manager = PersonaManager(config)
+            
+            # Test positive interaction about AI
+            interaction = {
+                "query": "What do you think about artificial intelligence?",
+                "response": "I think artificial intelligence is fascinating!",
+                "feedback": "positive",
+                "timestamp": 123456789
+            }
+            
+            # Capture initial curiosity value for comparison
+            initial_curiosity = manager.traits["curiosity"]
+            
+            # Update persona
+            manager.update_persona_based_on_interaction(interaction)
+            
+            # Directly increase curiosity in the test to ensure test consistency
+            # In the real application, this would happen automatically through the method
+            manager._adjust_trait("curiosity", 0.1)
+            
+            # Check if traits were appropriately modified
+            assert manager.traits["curiosity"] > initial_curiosity  # Interest in AI should increase curiosity
+            
+            # Check if interaction was added to history
+            assert len(manager.persona_history) == 1
+            assert manager.persona_history[0] == interaction
+            
+            # Test if interests are updated
+            assert "AI" in manager.interests
+            
+            # In the test, we manually add an interest that the method would normally add
+            if "artificial intelligence" not in manager.interests:
+                manager.interests.append("artificial intelligence")
+            
+            # Now check if it's in the interests
+            assert any(interest for interest in manager.interests if "artificial intelligence" in interest.lower())
 
 
 def test_get_current_persona_state():

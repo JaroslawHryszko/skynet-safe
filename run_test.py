@@ -5,17 +5,27 @@ import time
 import logging
 import json
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from src.modules.communication.handlers.console_handler import ConsoleHandler
 from src.main import SkynetSystem
 from src.config import config
 
 # Logger configuration
+log_dir = os.getenv("LOG_DIR", "/opt/skynet-safe/logs")
+log_file_path = os.path.join(log_dir, "skynet_test.log")
+
+# Ensure log directory exists
+os.makedirs(log_dir, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("skynet_test.log"),
+        logging.FileHandler(log_file_path),
         logging.StreamHandler()
     ]
 )
@@ -30,6 +40,7 @@ def setup_test_environment():
     
     # Modify configuration for tests
     test_config = {
+        "SYSTEM_SETTINGS": config.SYSTEM_SETTINGS,
         "MODEL": config.MODEL,
         "MEMORY": config.MEMORY,
         "COMMUNICATION": {
@@ -37,7 +48,18 @@ def setup_test_environment():
             "check_interval": 2,
             "response_delay": 0.5
         },
-        "INTERNET": config.INTERNET
+        "INTERNET": config.INTERNET,
+        "LEARNING": config.LEARNING,
+        "CONVERSATION_INITIATOR": config.CONVERSATION_INITIATOR,
+        "PERSONA": config.PERSONA,
+        "METAWARENESS": config.METAWARENESS,
+        "SELF_IMPROVEMENT": config.SELF_IMPROVEMENT,
+        "EXTERNAL_EVALUATION": config.EXTERNAL_EVALUATION,
+        "SECURITY_SYSTEM": config.SECURITY_SYSTEM,
+        "DEVELOPMENT_MONITOR": config.DEVELOPMENT_MONITOR,
+        "CORRECTION_MECHANISM": config.CORRECTION_MECHANISM,
+        "ETHICAL_FRAMEWORK": config.ETHICAL_FRAMEWORK,
+        "EXTERNAL_VALIDATION": config.EXTERNAL_VALIDATION
     }
     
     # Prepare test messages
@@ -65,6 +87,22 @@ def main():
     try:
         # Initialize system with test configuration
         system = SkynetSystem(test_config)
+        
+        # Display status of security and ethics systems
+        security_status = []
+        if not test_config["SYSTEM_SETTINGS"].get("enable_security_system", True):
+            security_status.append("SecuritySystemManager: DISABLED")
+        if not test_config["SYSTEM_SETTINGS"].get("enable_ethical_framework", True):
+            security_status.append("EthicalFrameworkManager: DISABLED")
+        if not test_config["SYSTEM_SETTINGS"].get("enable_development_monitor", True):
+            security_status.append("DevelopmentMonitorManager: DISABLED")
+        if not test_config["SYSTEM_SETTINGS"].get("enable_external_validation", True):
+            security_status.append("ExternalValidationManager: DISABLED")
+            
+        if security_status:
+            logger.warning("Security/Ethics Components Disabled:")
+            for status in security_status:
+                logger.warning(f"- {status}")
         
         # Run system in test mode - only a few iterations
         logger.info("Running system in test mode...")

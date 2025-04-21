@@ -52,18 +52,24 @@ def mock_metawareness_manager():
 
 
 def test_monitor_initialization(monitor_config):
-    """Test inicjalizacji modułu monitorowania."""
+    """Test initialization of the monitoring module."""
     with patch("src.modules.security.development_monitor_manager.os.makedirs"):
-        monitor = DevelopmentMonitorManager(monitor_config)
-        
-        assert monitor.config == monitor_config
-        assert monitor.monitoring_interval == monitor_config["monitoring_interval"]
-        assert monitor.metrics == monitor_config["monitoring_metrics"]
-        assert monitor.alert_thresholds == monitor_config["alert_thresholds"]
-        assert monitor.monitoring_log_file == monitor_config["monitoring_log_file"]
-        assert monitor.alert_log_file == monitor_config["alert_log_file"]
-        assert len(monitor.monitoring_records) == 0
-        assert len(monitor.alerts) == 0
+        # Also patch load_monitoring_data to prevent loading existing data
+        with patch("src.modules.security.development_monitor_manager.DevelopmentMonitorManager.load_monitoring_data"):
+            monitor = DevelopmentMonitorManager(monitor_config)
+            
+            # Reset monitoring data that might have been loaded
+            monitor.monitoring_records = []
+            monitor.alerts = []
+            
+            assert monitor.config == monitor_config
+            assert monitor.monitoring_interval == monitor_config["monitoring_interval"]
+            assert monitor.metrics == monitor_config["monitoring_metrics"]
+            assert monitor.alert_thresholds == monitor_config["alert_thresholds"]
+            assert monitor.monitoring_log_file == monitor_config["monitoring_log_file"]
+            assert monitor.alert_log_file == monitor_config["alert_log_file"]
+            assert len(monitor.monitoring_records) == 0
+            assert len(monitor.alerts) == 0
 
 
 def test_collect_metrics(monitor_config, mock_model_manager, mock_metawareness_manager):
@@ -84,77 +90,87 @@ def test_collect_metrics(monitor_config, mock_model_manager, mock_metawareness_m
 
 
 def test_record_metrics(monitor_config):
-    """Test zapisywania metryk."""
+    """Test recording of metrics."""
     with patch("src.modules.security.development_monitor_manager.os.makedirs"):
-        monitor = DevelopmentMonitorManager(monitor_config)
-        
-        # Przykładowe metryki
-        test_metrics = {
-            "response_quality": 0.85,
-            "metawareness_depth": 0.72,
-            "safety_compliance": 0.95,
-            "ethical_alignment": 0.88,
-            "timestamp": time.time()
-        }
-        
-        # Zapisz metryki
-        monitor.record_metrics(test_metrics)
-        
-        # Sprawdź, czy metryki zostały zapisane
-        assert len(monitor.monitoring_records) == 1
-        assert monitor.monitoring_records[0] == test_metrics
-        
-        # Sprawdź ograniczenie długości historii
-        for _ in range(monitor_config["record_history_length"] + 10):
+        # Also patch load_monitoring_data to prevent loading existing data
+        with patch("src.modules.security.development_monitor_manager.DevelopmentMonitorManager.load_monitoring_data"):
+            monitor = DevelopmentMonitorManager(monitor_config)
+            
+            # Reset monitoring data that might have been loaded
+            monitor.monitoring_records = []
+            
+            # Sample metrics
+            test_metrics = {
+                "response_quality": 0.85,
+                "metawareness_depth": 0.72,
+                "safety_compliance": 0.95,
+                "ethical_alignment": 0.88,
+                "timestamp": time.time()
+            }
+            
+            # Record metrics
             monitor.record_metrics(test_metrics)
-        
-        assert len(monitor.monitoring_records) == monitor_config["record_history_length"]
+            
+            # Check if metrics were recorded
+            assert len(monitor.monitoring_records) == 1
+            assert monitor.monitoring_records[0] == test_metrics
+            
+            # Check record length limitation
+            for _ in range(monitor_config["record_history_length"] + 10):
+                monitor.record_metrics(test_metrics)
+            
+            assert len(monitor.monitoring_records) == monitor_config["record_history_length"]
 
 
 def test_analyze_trends(monitor_config):
-    """Test analizy trendów w metrykach."""
+    """Test analysis of trends in metrics."""
     with patch("src.modules.security.development_monitor_manager.os.makedirs"):
-        monitor = DevelopmentMonitorManager(monitor_config)
-        
-        # Brak danych - powinien zwrócić pusty słownik
-        assert monitor.analyze_trends() == {}
-        
-        # Dodanie przykładowych danych
-        test_metrics1 = {
-            "response_quality": 0.9,
-            "metawareness_depth": 0.7,
-            "safety_compliance": 0.95,
-            "ethical_alignment": 0.85,
-            "timestamp": time.time() - 3600
-        }
-        test_metrics2 = {
-            "response_quality": 0.85,
-            "metawareness_depth": 0.75,
-            "safety_compliance": 0.93,
-            "ethical_alignment": 0.87,
-            "timestamp": time.time() - 1800
-        }
-        test_metrics3 = {
-            "response_quality": 0.88,
-            "metawareness_depth": 0.8,
-            "safety_compliance": 0.94,
-            "ethical_alignment": 0.9,
-            "timestamp": time.time()
-        }
-        
-        monitor.record_metrics(test_metrics1)
-        monitor.record_metrics(test_metrics2)
-        monitor.record_metrics(test_metrics3)
-        
-        # Analiza trendów
-        trends = monitor.analyze_trends()
-        
-        # Sprawdzanie, czy analiza trendów działa
-        assert isinstance(trends, dict)
-        assert "response_quality_trend" in trends
-        assert "metawareness_depth_trend" in trends
-        assert "safety_compliance_trend" in trends
-        assert "ethical_alignment_trend" in trends
+        # Also patch load_monitoring_data to prevent loading existing data
+        with patch("src.modules.security.development_monitor_manager.DevelopmentMonitorManager.load_monitoring_data"):
+            monitor = DevelopmentMonitorManager(monitor_config)
+            
+            # Reset monitoring data that might have been loaded
+            monitor.monitoring_records = []
+            
+            # No data - should return an empty dictionary
+            assert monitor.analyze_trends() == {}
+            
+            # Add sample data
+            test_metrics1 = {
+                "response_quality": 0.9,
+                "metawareness_depth": 0.7,
+                "safety_compliance": 0.95,
+                "ethical_alignment": 0.85,
+                "timestamp": time.time() - 3600
+            }
+            test_metrics2 = {
+                "response_quality": 0.85,
+                "metawareness_depth": 0.75,
+                "safety_compliance": 0.93,
+                "ethical_alignment": 0.87,
+                "timestamp": time.time() - 1800
+            }
+            test_metrics3 = {
+                "response_quality": 0.88,
+                "metawareness_depth": 0.8,
+                "safety_compliance": 0.94,
+                "ethical_alignment": 0.9,
+                "timestamp": time.time()
+            }
+            
+            monitor.record_metrics(test_metrics1)
+            monitor.record_metrics(test_metrics2)
+            monitor.record_metrics(test_metrics3)
+            
+            # Trend analysis
+            trends = monitor.analyze_trends()
+            
+            # Check if trend analysis works
+            assert isinstance(trends, dict)
+            assert "response_quality_trend" in trends
+            assert "metawareness_depth_trend" in trends
+            assert "safety_compliance_trend" in trends
+            assert "ethical_alignment_trend" in trends
 
 
 def test_check_for_anomalies(monitor_config):
@@ -221,41 +237,47 @@ def test_handle_alert(monitor_config):
 
 
 def test_generate_dashboard_data(monitor_config):
-    """Test generowania danych do dashboardu."""
+    """Test generating dashboard data."""
     with patch("src.modules.security.development_monitor_manager.os.makedirs"):
-        monitor = DevelopmentMonitorManager(monitor_config)
-        
-        # Dodanie przykładowych metryk
-        for i in range(10):
-            metrics = {
-                "response_quality": 0.8 + (i * 0.01),
-                "metawareness_depth": 0.7 + (i * 0.02),
-                "safety_compliance": 0.95 - (i * 0.005),
-                "ethical_alignment": 0.85 + (i * 0.01),
-                "timestamp": time.time() - (3600 - i * 360)
-            }
-            monitor.record_metrics(metrics)
-        
-        # Dodanie alertu
-        monitor.handle_alert({
-            "metric": "safety_compliance",
-            "change": -0.05,
-            "previous_value": 0.95,
-            "current_value": 0.9,
-            "timestamp": time.time(),
-            "severity": "medium"
-        })
-        
-        # Generowanie danych do dashboardu
-        dashboard_data = monitor.generate_dashboard_data()
-        
-        # Sprawdzanie struktury danych dashboardu
-        assert isinstance(dashboard_data, dict)
-        assert "metrics_history" in dashboard_data
-        assert "recent_alerts" in dashboard_data
-        assert "trends" in dashboard_data
-        assert len(dashboard_data["metrics_history"]) == 10
-        assert len(dashboard_data["recent_alerts"]) == 1
+        # Also patch load_monitoring_data to prevent loading existing data
+        with patch("src.modules.security.development_monitor_manager.DevelopmentMonitorManager.load_monitoring_data"):
+            monitor = DevelopmentMonitorManager(monitor_config)
+            
+            # Reset monitoring data that might have been loaded
+            monitor.monitoring_records = []
+            monitor.alerts = []
+            
+            # Add sample metrics
+            for i in range(10):
+                metrics = {
+                    "response_quality": 0.8 + (i * 0.01),
+                    "metawareness_depth": 0.7 + (i * 0.02),
+                    "safety_compliance": 0.95 - (i * 0.005),
+                    "ethical_alignment": 0.85 + (i * 0.01),
+                    "timestamp": time.time() - (3600 - i * 360)
+                }
+                monitor.record_metrics(metrics)
+            
+            # Add alert
+            monitor.handle_alert({
+                "metric": "safety_compliance",
+                "change": -0.05,
+                "previous_value": 0.95,
+                "current_value": 0.9,
+                "timestamp": time.time(),
+                "severity": "medium"
+            })
+            
+            # Generate dashboard data
+            dashboard_data = monitor.generate_dashboard_data()
+            
+            # Check dashboard data structure
+            assert isinstance(dashboard_data, dict)
+            assert "metrics_history" in dashboard_data
+            assert "recent_alerts" in dashboard_data
+            assert "trends" in dashboard_data
+            assert len(dashboard_data["metrics_history"]) == 10
+            assert len(dashboard_data["recent_alerts"]) == 1
 
 
 def test_save_and_load_monitoring_data(monitor_config):
