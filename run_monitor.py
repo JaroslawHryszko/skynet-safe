@@ -29,11 +29,26 @@ if __name__ == '__main__':
     port = int(os.getenv("WEB_PORT", port))
     debug = os.getenv("WEB_DEBUG", str(debug)).lower() in ('true', '1', 't')
     
-    print(f"Starting SKYNET-SAFE Activity Monitor on {host}:{port}")
-    if host == "0.0.0.0":
-        print(f"Access the monitor at http://localhost:{port}")
-    else:
-        print(f"Access the monitor at http://{host}:{port}")
+    # Get machine's IP address
+    import socket
+    def get_ip_address():
+        try:
+            # Create a socket connection to an external server
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Doesn't need to be reachable
+            s.connect(('10.255.255.255', 1))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return '127.0.0.1'
+    
+    ip_address = get_ip_address()
+    
+    print(f"Starting SKYNET-SAFE Activity Monitor on port {port}")
+    print(f"Access locally at: http://localhost:{port}")
+    print(f"Access from network at: http://{ip_address}:{port}")
     print("Press Ctrl+C to stop")
     
-    app.run(debug=debug, host=host, port=port)
+    # Explicitly set host to '0.0.0.0' to listen on all interfaces
+    app.run(debug=debug, host='0.0.0.0', port=port)

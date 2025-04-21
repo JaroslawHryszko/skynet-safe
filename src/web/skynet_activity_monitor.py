@@ -130,4 +130,5 @@ if __name__ == '__main__':
     port = int(os.getenv("WEB_PORT", port))
     debug = os.getenv("WEB_DEBUG", str(debug)).lower() in ('true', '1', 't')
     
-    app.run(debug=debug, host=host, port=port)
+    # Explicitly set host to '0.0.0.0' to listen on all interfaces
+    app.run(debug=debug, host='0.0.0.0', port=port)

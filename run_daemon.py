@@ -417,10 +417,25 @@ def main():
             f.write(f"{web_process.pid}\n")
         
         print(f"Web interface started with PID {web_process.pid}")
-        if host == "0.0.0.0":
-            print(f"Access the web interface at http://localhost:{port}")
-        else:
-            print(f"Access the web interface at http://{host}:{port}")
+        
+        # Get machine's IP address
+        import socket
+        def get_ip_address():
+            try:
+                # Create a socket connection to an external server
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                # Doesn't need to be reachable
+                s.connect(('10.255.255.255', 1))
+                ip = s.getsockname()[0]
+                s.close()
+                return ip
+            except Exception:
+                return '127.0.0.1'
+        
+        ip_address = get_ip_address()
+        
+        print(f"Access locally at: http://localhost:{port}")
+        print(f"Access from network at: http://{ip_address}:{port}")
         return web_process.pid
 
     # Perform requested action
