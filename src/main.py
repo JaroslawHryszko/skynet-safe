@@ -352,6 +352,10 @@ class SkynetSystem:
 
     def _perform_periodic_tasks(self):
         """Performing periodic system tasks."""
+        if not self.initial_cycle_skipped:
+            self.initial_cycle_skipped = True
+            return
+        
         logger.info("Performing periodic system tasks")
         
         # Internet exploration and discovery updates
@@ -670,5 +674,6 @@ if __name__ == "__main__":
         "EXTERNAL_VALIDATION": config.EXTERNAL_VALIDATION
     }
     
+    self.initial_cycle_skipped = False
     skynet = SkynetSystem(system_config)
     skynet.run()
