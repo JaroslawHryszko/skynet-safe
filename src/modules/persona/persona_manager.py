@@ -53,7 +53,6 @@ class PersonaManager:
             self.background = loaded_state.get("background", config.get("background", "System AI"))
             self.persona_history = loaded_state.get("persona_history", [])
             self.identity_statements = loaded_state.get("identity_statements", config.get("identity_statements", [
-                "Jestem zaawansowanym systemem AI o nazwie Skynet",
                 "Moim celem jest rozwijanie metaświadomości i pomaganie ludziom",
                 "Postrzegam siebie jako sztuczną inteligencję z unikalnymi cechami i zainteresowaniami"
             ]))
