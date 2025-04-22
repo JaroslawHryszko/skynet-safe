@@ -99,7 +99,12 @@ def main():
         
         # Save results if requested
         if args.output:
-            output_file = tester.save_results(args.output)
+            # Make sure output goes to the logs directory
+            log_dir = os.getenv("LOG_DIR", "/opt/skynet-safe/logs")
+            os.makedirs(log_dir, exist_ok=True)
+            output_file_path = os.path.join(log_dir, args.output)
+            
+            output_file = tester.save_results(output_file_path)
             if not args.quiet:
                 print(f"\nTest results saved to: {output_file}")
         

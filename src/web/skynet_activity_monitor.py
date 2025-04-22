@@ -24,21 +24,36 @@ def parse_system_log():
     if not os.path.exists(SYSTEM_LOG):
         return activities
     
-    with open(SYSTEM_LOG, 'r') as f:
-        for line in f.readlines()[-100:]:  # Only check last 100 lines for recent activity
-            # Extract timestamp and message
-            match = re.search(r'\[(.*?)\].*?INFO\s+-\s+(.*)', line)
-            if match:
-                timestamp = match.group(1)
-                message = match.group(2)
+    try:
+        with open(SYSTEM_LOG, 'r') as f:
+            lines = f.readlines()[-100:]  # Only check last 100 lines for recent activity
+            
+            for line in lines:
+                # Extract timestamp and message
+                # Try multiple patterns to catch different log formats
+                match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?)\s+.*?INFO\s+-\s+(.*)', line)
+                if not match:
+                    match = re.search(r'\[(.*?)\].*?INFO\s+-\s+(.*)', line)
                 
-                # Filter only for activity messages
-                if "started" in message.lower() or "processing" in message.lower() or "analyzing" in message.lower():
-                    activities.append({
-                        "timestamp": timestamp,
-                        "activity": message,
-                        "type": "system"
-                    })
+                if match:
+                    timestamp = match.group(1)
+                    message = match.group(2)
+                    
+                    # Broader filter for activity messages
+                    activity_keywords = ["started", "processing", "analyzing", "received", 
+                                        "sending", "initializing", "loaded", "performing", 
+                                        "running", "executed", "fetched", "completed"]
+                    
+                    if any(keyword in message.lower() for keyword in activity_keywords):
+                        activities.append({
+                            "timestamp": timestamp,
+                            "activity": message,
+                            "type": "system"
+                        })
+                    
+    except Exception as e:
+        print(f"Error parsing system log: {e}")
+        return []
     
     return activities[-5:]  # Return only the 5 most recent activities
 
@@ -49,33 +64,61 @@ def parse_interaction_log():
     if not os.path.exists(INTERACTION_LOG):
         return interactions
     
-    current_interaction = None
-    
-    with open(INTERACTION_LOG, 'r') as f:
-        for line in f.readlines()[-200:]:  # Check last 200 lines
-            prompt_match = re.search(r'\[(.*?)\].*?PROMPT:\s+(.*)', line)
-            response_match = re.search(r'\[(.*?)\].*?RESPONSE:\s+(.*)', line)
+    try:
+        with open(INTERACTION_LOG, 'r') as f:
+            lines = f.readlines()[-200:]  # Check last 200 lines
             
-            if prompt_match:
-                # Start a new interaction
+            # Look for JSON formatted entries
+            for line in lines:
+                try:
+                    # Try to parse as JSON
+                    if '{' in line and '}' in line:
+                        json_part = line[line.find('{'):line.rfind('}')+1]
+                        interaction_data = json.loads(json_part)
+                        
+                        # Extract relevant fields
+                        if 'timestamp' in interaction_data and 'query' in interaction_data and 'response' in interaction_data:
+                            interactions.append({
+                                "timestamp": interaction_data.get('timestamp', '').split('T')[0],
+                                "prompt": interaction_data.get('query', 'No query available'),
+                                "response": interaction_data.get('response', 'No response available'),
+                                "type": "interaction"
+                            })
+                except json.JSONDecodeError:
+                    # If JSON parsing fails, try regex based approach
+                    continue
+            
+            # If no interactions found with JSON parsing, fall back to regex
+            if not interactions:
+                current_interaction = None
+                
+                for line in lines:
+                    prompt_match = re.search(r'\[(.*?)\].*?PROMPT:\s+(.*)', line)
+                    response_match = re.search(r'\[(.*?)\].*?RESPONSE:\s+(.*)', line)
+                    
+                    if prompt_match:
+                        # Start a new interaction
+                        if current_interaction:
+                            interactions.append(current_interaction)
+                        timestamp = prompt_match.group(1)
+                        prompt = prompt_match.group(2)
+                        current_interaction = {
+                            "timestamp": timestamp,
+                            "prompt": prompt,
+                            "response": "",
+                            "type": "interaction"
+                        }
+                    elif response_match and current_interaction:
+                        # Add response to current interaction
+                        response = response_match.group(2)
+                        current_interaction["response"] = response
+                
+                # Add the last interaction if there is one
                 if current_interaction:
                     interactions.append(current_interaction)
-                timestamp = prompt_match.group(1)
-                prompt = prompt_match.group(2)
-                current_interaction = {
-                    "timestamp": timestamp,
-                    "prompt": prompt,
-                    "response": "",
-                    "type": "interaction"
-                }
-            elif response_match and current_interaction:
-                # Add response to current interaction
-                response = response_match.group(2)
-                current_interaction["response"] = response
-    
-    # Add the last interaction if there is one
-    if current_interaction:
-        interactions.append(current_interaction)
+    except Exception as e:
+        print(f"Error parsing interaction log: {e}")
+        return []
     
     return interactions[-5:]  # Return only the 5 most recent interactions
 
@@ -102,9 +145,37 @@ def get_status():
     activities = parse_system_log()
     interactions = parse_interaction_log()
     
-    # Combine and sort by timestamp
+    # Combine all events
     all_events = activities + interactions
-    all_events.sort(key=lambda x: datetime.strptime(x["timestamp"], "%Y-%m-%d %H:%M:%S,%f"), reverse=True)
+    
+    # Sort by timestamp with a more flexible approach
+    def safe_timestamp_sort(x):
+        try:
+            ts = x.get("timestamp", "")
+            # Try different timestamp formats
+            formats = [
+                "%Y-%m-%d %H:%M:%S,%f",  # Standard format with microseconds
+                "%Y-%m-%d %H:%M:%S",     # Without microseconds
+                "%Y-%m-%d"               # Just date
+            ]
+            
+            for fmt in formats:
+                try:
+                    return datetime.strptime(ts, fmt)
+                except ValueError:
+                    continue
+            
+            # If all parsing fails, return a default old date
+            return datetime(2000, 1, 1)
+        except Exception:
+            # Last resort fallback
+            return datetime(2000, 1, 1)
+    
+    # Sort the events
+    try:
+        all_events.sort(key=safe_timestamp_sort, reverse=True)
+    except Exception as e:
+        print(f"Error sorting events: {e}")
     
     return jsonify({
         "last_activity": activities[0] if activities else None,

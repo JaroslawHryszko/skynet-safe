@@ -201,9 +201,13 @@ ETHICAL_FRAMEWORK = {
 
 ### System Logs
 
-The system stores logs in the `data/logs/` directory. Main log files:
+The system stores logs in the `/opt/skynet-safe/logs/` directory (or the directory specified in the `LOG_DIR` environment variable). Main log files:
 
-- `skynet.log` - main system log
+- `skynet.log` - main system log with basic operational information and LLM interactions
+- `config_test.log` - detailed logs from configuration testing
+- `llm_interactions.log` - detailed logs of model interactions in JSON format
+- `skynet_test.log` - logs from test mode operation
+- `skynet_interactive.log` - logs from interactive mode operation
 - `security.log` - security events log
 - `corrections.json` - ethical corrections history
 - `monitoring_log.json` - monitoring metrics history

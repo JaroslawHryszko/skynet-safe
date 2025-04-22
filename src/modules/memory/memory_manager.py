@@ -280,10 +280,9 @@ class MemoryManager:
         try:
             if hasattr(self, 'db'):
                 logger.info("Saving memory state...")
-                if hasattr(self, 'interactions_collection'):
-                    self.interactions_collection.persist()
-                if hasattr(self, 'reflections_collection'):
-                    self.reflections_collection.persist()
+                # Use db.persist() instead of collection.persist()
+                # as collection may not have persist method in newer ChromaDB versions
+                self.db.persist()
                 logger.info("Memory state saved successfully")
         except Exception as e:
             logger.error(f"Error saving memory state: {e}")

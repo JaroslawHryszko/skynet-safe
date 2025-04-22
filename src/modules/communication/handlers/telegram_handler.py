@@ -46,6 +46,10 @@ class TelegramHandler(MessageHandler):
         
         # Last seen update_id
         self.last_update_id = 0
+        self.last_update_id_file = os.path.join(os.path.dirname(self.chat_state_file), "last_update_id.txt")
+        
+        # Try to load last update ID from file
+        self._load_last_update_id()
         
         # Check if the bot is working
         try:
@@ -77,8 +81,17 @@ class TelegramHandler(MessageHandler):
         
         try:
             # Get updates from Telegram API
+            # If this is the first run and we've loaded a last_update_id, use it
+            # If not, we're starting fresh, so we can use a higher offset to skip old messages
+            if self.last_update_id > 0:
+                offset = self.last_update_id + 1
+            else:
+                # On first run with no saved state, get only new messages
+                # We'll omit the offset parameter to get most recent updates
+                offset = 0
+            
             params = {
-                "offset": self.last_update_id + 1,
+                "offset": offset,
                 "timeout": self.polling_timeout,
                 "allowed_updates": ["message"]
             }
@@ -142,6 +155,8 @@ class TelegramHandler(MessageHandler):
                 logger.info(f"Received {len(messages)} new messages from Telegram")
                 # Save chat state updates
                 self.save_chat_state()
+                # Save the last update ID
+                self._save_last_update_id()
                 
         except Exception as e:
             logger.error(f"Error while getting messages from Telegram: {e}")
@@ -152,29 +167,22 @@ class TelegramHandler(MessageHandler):
         # Telegram has a message limit around 4096 characters
         max_message_length = 4000  # Safe limit
         
-        # If message is longer than the limit, split it into parts
+        # If message is longer than the limit, truncate it
         if len(content) > max_message_length:
-            # Split message into parts
-            message_parts = []
-            for i in range(0, len(content), max_message_length):
-                part = content[i:i + max_message_length]
-                message_parts.append(part)
-            
-            logger.info(f"Message split into {len(message_parts)} parts")
-            
-            # Send each part separately
-            all_sent = True
-            for i, part in enumerate(message_parts):
-                if not self._send_single_message(recipient, part):
-                    all_sent = False
-                # Short delay between messages to avoid API limits
-                if i < len(message_parts) - 1:
-                    time.sleep(0.5)
-            
-            return all_sent
-        else:
-            # Standard sending for short message
-            return self._send_single_message(recipient, content)
+            # Truncate message to the safe limit
+            content = content[:max_message_length]
+            logger.info(f"Message truncated to {max_message_length} characters")
+        
+        # Remove non-ASCII characters to prevent encoding issues
+        content = ''.join(char for char in content if ord(char) < 128)
+        
+        # Remove HTML tags and special characters
+        import re
+        content = re.sub(r'<[^>]+>', '', content)  # Remove HTML tags
+        content = re.sub(r'[|`*_{}[\]()#+\-.!]', '', content)  # Remove special characters
+        
+        # Send the message
+        return self._send_single_message(recipient, content)
             
     def _send_single_message(self, recipient: str, content: str) -> bool:
         """Send message to recipient via Telegram.
@@ -190,8 +198,8 @@ class TelegramHandler(MessageHandler):
             # Prepare data to send
             payload = {
                 "chat_id": recipient,
-                "text": content,
-                "parse_mode": "HTML"  # Allow HTML formatting
+                "text": content
+                # Removed HTML parse mode to ensure plain text only
             }
             
             # Send message via Telegram API
@@ -251,8 +259,29 @@ class TelegramHandler(MessageHandler):
         except Exception as e:
             logger.error(f"Error while saving chat state: {e}")
     
+    def _load_last_update_id(self) -> None:
+        """Load last update ID from file."""
+        if os.path.exists(self.last_update_id_file):
+            try:
+                with open(self.last_update_id_file, 'r') as f:
+                    self.last_update_id = int(f.read().strip())
+                logger.info(f"Loaded last update ID: {self.last_update_id}")
+            except Exception as e:
+                logger.error(f"Error while loading last update ID: {e}")
+    
+    def _save_last_update_id(self) -> None:
+        """Save last update ID to file."""
+        try:
+            with open(self.last_update_id_file, 'w') as f:
+                f.write(str(self.last_update_id))
+            logger.debug(f"Saved last update ID: {self.last_update_id}")
+        except Exception as e:
+            logger.error(f"Error while saving last update ID: {e}")
+    
     def close(self) -> None:
         """Close Telegram connection and cleanup resources."""
         # Save chat state before closing
         self.save_chat_state()
+        # Save last update ID
+        self._save_last_update_id()
         logger.info("Telegram handler closed")
