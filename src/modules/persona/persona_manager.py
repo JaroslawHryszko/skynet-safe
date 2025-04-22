@@ -267,6 +267,10 @@ class PersonaManager:
         return persona_context.strip()
 
     def apply_persona_to_response(self, model_manager: Any, query: str, original_response: str) -> str:
+    
+        if os.getenv("DISABLE_PERSONA_TRANSFORM", "false").lower() == "true":
+            return original_response
+    
         """Applies persona to the generated response.
         
         Args:
