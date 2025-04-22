@@ -456,6 +456,17 @@ class SkynetSystem:
                     self.recent_discoveries.pop(0)
                 
                 logger.info(f"New discovery: {discovery['content'][:50]}...")
+                
+            # Manage discoveries list to prevent memory leak
+            self._manage_discoveries_list()
+                
+    def _manage_discoveries_list(self):
+        """Manages the discoveries list to prevent memory leak."""
+        # Keep only the last 50 discoveries
+        MAX_DISCOVERIES = 50
+        if len(self.recent_discoveries) > MAX_DISCOVERIES:
+            # Remove oldest discoveries to maintain the limit
+            self.recent_discoveries = self.recent_discoveries[-MAX_DISCOVERIES:]
 
     def _perform_external_evaluation(self):
         """Performs external evaluation of the system."""

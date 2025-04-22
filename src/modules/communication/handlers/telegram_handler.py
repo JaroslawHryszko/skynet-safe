@@ -81,20 +81,18 @@ class TelegramHandler(MessageHandler):
         
         try:
             # Get updates from Telegram API
-            # If this is the first run and we've loaded a last_update_id, use it
-            # If not, we're starting fresh, so we can use a higher offset to skip old messages
-            if self.last_update_id > 0:
-                offset = self.last_update_id + 1
-            else:
-                # On first run with no saved state, get only new messages
-                # We'll omit the offset parameter to get most recent updates
-                offset = 0
+            params = {}
             
-            params = {
-                "offset": offset,
-                "timeout": self.polling_timeout,
-                "allowed_updates": ["message"]
-            }
+            # If we have a last update ID, use it to avoid getting old messages
+            if self.last_update_id > 0:
+                params["offset"] = self.last_update_id + 1
+            else:
+                # For first run, we'll use a small limit to avoid loading too many old messages
+                params["limit"] = 10
+            
+            # Add other parameters
+            params["timeout"] = self.polling_timeout
+            params["allowed_updates"] = ["message"]
             
             response = requests.get(f"{self.api_url}/getUpdates", params=params)
             if response.status_code != 200:
@@ -164,25 +162,44 @@ class TelegramHandler(MessageHandler):
         return messages
     
     def send_message(self, recipient: str, content: str) -> bool:
-        # Telegram has a message limit around 4096 characters
-        max_message_length = 4000  # Safe limit
+        """Send message to recipient via Telegram.
         
-        # If message is longer than the limit, truncate it
-        if len(content) > max_message_length:
-            # Truncate message to the safe limit
-            content = content[:max_message_length]
-            logger.info(f"Message truncated to {max_message_length} characters")
+        Args:
+            recipient: Recipient identifier (chat_id)
+            content: Message content
+            
+        Returns:
+            True if sending was successful, False otherwise
+        """
+        try:
+            # Telegram has a message limit around 4096 characters
+            max_message_length = 4000  # Safe limit
+            
+            # If message is longer than the limit, truncate it
+            if len(content) > max_message_length:
+                # Truncate message to the safe limit
+                content = content[:max_message_length]
+                logger.info(f"Message truncated to {max_message_length} characters")
+            
+            # Enhanced security: Sanitize content to prevent potential exploits
+            # Remove non-printable characters
+            content = ''.join(char for char in content if ord(char) >= 32 and ord(char) < 127)
+            
+            # Remove HTML tags and special characters using a more comprehensive approach
+            import re
+            content = re.sub(r'<[^>]*>', '', content)  # Remove HTML tags
+            
+            # Escape special Markdown characters to prevent formatting exploits
+            markdown_chars = r'_*[]()~`>#+-=|{}.!'
+            for char in markdown_chars:
+                content = content.replace(char, '\\' + char)
+            
+            # Send the message with escaped characters
+            return self._send_single_message(recipient, content)
         
-        # Remove non-ASCII characters to prevent encoding issues
-        content = ''.join(char for char in content if ord(char) < 128)
-        
-        # Remove HTML tags and special characters
-        import re
-        content = re.sub(r'<[^>]+>', '', content)  # Remove HTML tags
-        content = re.sub(r'[|`*_{}[\]()#+\-.!]', '', content)  # Remove special characters
-        
-        # Send the message
-        return self._send_single_message(recipient, content)
+        except Exception as e:
+            logger.error(f"Error sanitizing or preparing message: {e}")
+            return False
             
     def _send_single_message(self, recipient: str, content: str) -> bool:
         """Send message to recipient via Telegram.
