@@ -276,9 +276,9 @@ IMPORTANT: Respond ONLY with your own message. DO NOT continue the conversation 
         # Check if we're using Llama-3 model
         model_name = self.config.get('base_model', '').lower()
         
-        # Sprawdzenie czy model jest uszkodzonym lub "abliterated" Llama-3
+        # Checking if the model is damaged or 'abliterated' Llama-3
         if "failspy" in model_name or "abliterated" in model_name:
-            # Specjalne przetwarzanie dla uszkodzonych modeli Llama-3
+            # Special processing for damaged Llama-3 models
             logger.warning("Detected problematic model output, applying special cleanup")
             
             # Improved answer extraction - try to extract answer using stronger pattern matching

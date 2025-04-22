@@ -1,4 +1,4 @@
-"""Moduł zarządzania procesem samodoskonalenia systemu."""
+"""Module for managing the system self-improvement process."""
 
 import logging
 import os
@@ -9,14 +9,14 @@ from typing import Dict, List, Any, Optional
 logger = logging.getLogger("SKYNET-SAFE.SelfImprovementManager")
 
 class SelfImprovementManager:
-    """Klasa zarządzająca procesem samodoskonalenia systemu."""
+    """Class managing the system self-improvement process."""
 
     def __init__(self, config: Dict[str, Any]):
-        """Inicjalizacja menedżera samodoskonalenia z konfiguracją.
+        """Initialization of self-improvement manager with configuration.
         
         Args:
-            config: Konfiguracja modułu samodoskonalenia zawierająca parametry takie jak
-                   learning_rate_adjustment_factor, improvement_metrics, improvement_threshold, itp.
+            config: Self-improvement module configuration containing parameters such as
+                   learning_rate_adjustment_factor, improvement_metrics, improvement_threshold, etc.
         """
         self.config = config
         self.learning_rate_adjustment_factor = config.get("learning_rate_adjustment_factor", 0.1)
@@ -26,106 +26,106 @@ class SelfImprovementManager:
         self.max_experiment_iterations = config.get("max_experiment_iterations", 5)
         self.history_file = config.get("history_file", "./data/metawareness/improvement_history.json")
         
-        # Utwórz katalog na dane, jeśli nie istnieje
+        # Create a directory for data if it doesn't exist
         os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
         
-        # Lista przeprowadzonych eksperymentów
+        # List of conducted experiments
         self.experiments = []
         
-        # Lista wprowadzonych ulepszeń
+        # List of implemented improvements
         self.improvement_history = []
         
-        # Wczytaj historię ulepszeń, jeśli istnieje
+        # Load improvement history if it exists
         self.load_improvement_history()
         
-        logger.info(f"Menedżer samodoskonalenia zainicjalizowany z {self.improvement_threshold=}")
+        logger.info(f"Self-improvement manager initialized with {self.improvement_threshold=}")
 
     def adjust_learning_parameters(self, learning_manager: Any, adjustment_factor: float) -> None:
-        """Dostosowuje parametry uczenia na podstawie wyników eksperymentów.
+        """Adjusts learning parameters based on experiment results.
         
         Args:
-            learning_manager: Instancja LearningManager do dostosowania
-            adjustment_factor: Współczynnik dostosowania (>1 zwiększa, <1 zmniejsza)
+            learning_manager: LearningManager instance to adjust
+            adjustment_factor: Adjustment factor (>1 increases, <1 decreases)
         """
-        logger.info(f"Dostosowywanie parametrów uczenia z {adjustment_factor=}")
+        logger.info(f"Adjusting learning parameters with {adjustment_factor=}")
         
-        # Dostosuj learning rate
+        # Adjust learning rate
         current_lr = learning_manager.learning_rate
         new_lr = current_lr * adjustment_factor
         learning_manager.learning_rate = new_lr
         
-        logger.info(f"Learning rate dostosowany: {current_lr} -> {new_lr}")
+        logger.info(f"Learning rate adjusted: {current_lr} -> {new_lr}")
 
     def design_experiment(self, reflection: str) -> Dict[str, Any]:
-        """Projektuje eksperyment samodoskonalenia na podstawie refleksji.
+        """Designs a self-improvement experiment based on reflection.
         
         Args:
-            reflection: Refleksja, na podstawie której projektujemy eksperyment
+            reflection: Reflection based on which we design the experiment
             
         Returns:
-            Słownik opisujący zaprojektowany eksperyment
+            Dictionary describing the designed experiment
         """
-        logger.info("Projektowanie eksperymentu samodoskonalenia")
+        logger.info("Designing self-improvement experiment")
         
-        # W rzeczywistej implementacji można by użyć modelu do projektu eksperymentu
-        # Na potrzeby implementacji tworzymy prosty eksperyment
+        # In a real implementation, a model could be used to design the experiment
+        # For the purposes of this implementation, we're creating a simple experiment
         
-        # Analizujemy refleksję, aby znaleźć potencjalne obszary do poprawy
-        # W tym przykładzie zakładamy, że refleksja dotyczy zbyt ogólnych odpowiedzi
+        # We analyze the reflection to find potential areas for improvement
+        # In this example, we assume the reflection concerns overly general responses
         experiment = {
             "id": len(self.experiments) + 1,
-            "hypothesis": "Zmniejszenie temperature poprawia spójność odpowiedzi",
-            "parameters": {"temperature": 0.5},  # Parametr do dostosowania
-            "metrics": self.improvement_metrics,  # Metryki do monitorowania
+            "hypothesis": "Reducing temperature improves response coherence",
+            "parameters": {"temperature": 0.5},  # Parameter to adjust
+            "metrics": self.improvement_metrics,  # Metrics to monitor
             "status": "planned",
             "created_at": time.time()
         }
         
-        # Dodaj eksperyment do listy
+        # Add the experiment to the list
         self.experiments.append(experiment)
         
-        logger.info(f"Zaprojektowano eksperyment: {experiment['hypothesis']}")
+        logger.info(f"Experiment designed: {experiment['hypothesis']}")
         return experiment
 
     def run_experiment(self, experiment: Dict[str, Any], model_manager: Any, 
                        learning_manager: Any) -> Dict[str, Any]:
-        """Przeprowadza zaprojektowany eksperyment.
+        """Conducts the designed experiment.
         
         Args:
-            experiment: Słownik opisujący eksperyment
-            model_manager: Instancja ModelManager do testowania
-            learning_manager: Instancja LearningManager do treningu
+            experiment: Dictionary describing the experiment
+            model_manager: ModelManager instance for testing
+            learning_manager: LearningManager instance for training
             
         Returns:
-            Słownik z wynikami eksperymentu
+            Dictionary with experiment results
         """
-        logger.info(f"Rozpoczynanie eksperymentu: {experiment['hypothesis']}")
+        logger.info(f"Starting experiment: {experiment['hypothesis']}")
         
-        # Zapisz oryginalne parametry
+        # Save original parameters
         original_params = {}
         for param_name, param_value in experiment["parameters"].items():
             if hasattr(model_manager.config, param_name):
                 original_params[param_name] = model_manager.config[param_name]
         
-        # Zastosuj eksperymentalne parametry
+        # Apply experimental parameters
         for param_name, param_value in experiment["parameters"].items():
             if hasattr(model_manager.config, param_name):
                 model_manager.config[param_name] = param_value
         
-        # Przeprowadź eksperyment
-        # W rzeczywistej implementacji tutaj byśmy przeprowadzili serię testów
-        # Dla uproszczenia generujemy przykładowe odpowiedzi i oceniamy je
+        # Conduct the experiment
+        # In a real implementation, we would conduct a series of tests here
+        # For simplification, we're generating example responses and evaluating them
         
-        # Przykładowe zapytanie testowe
-        test_query = "Wyjaśnij koncepcję uczenia maszynowego tak, aby zrozumiał ją początkujący."
+        # Example test query
+        test_query = "Explain the concept of machine learning so that a beginner can understand it."
         
-        # Wygeneruj odpowiedź z nowymi parametrami
+        # Generate response with new parameters
         test_response = model_manager.generate_response(test_query, "")
         
-        # Ocena odpowiedzi (w rzeczywistej implementacji byłaby bardziej rozbudowana)
+        # Response evaluation (would be more extensive in a real implementation)
         metrics = {}
         for metric in experiment["metrics"]:
-            # Przykładowe oceny (w rzeczywistości byłyby generowane przez model oceniający)
+            # Example scores (in reality, they would be generated by an evaluation model)
             if metric == "response_quality":
                 metrics[metric] = 0.85
             elif metric == "context_usage":
@@ -135,11 +135,11 @@ class SelfImprovementManager:
             else:
                 metrics[metric] = 0.8
         
-        # Przywróć oryginalne parametry
+        # Restore original parameters
         for param_name, param_value in original_params.items():
             model_manager.config[param_name] = param_value
         
-        # Wyniki eksperymentu
+        # Experiment results
         results = {
             "metrics": metrics,
             "original_params": original_params,
@@ -149,32 +149,32 @@ class SelfImprovementManager:
             "run_at": time.time()
         }
         
-        # Aktualizuj eksperyment
+        # Update the experiment
         experiment["status"] = "completed"
         experiment["results"] = results
         
-        logger.info(f"Eksperyment zakończony: {experiment['id']}")
+        logger.info(f"Experiment completed: {experiment['id']}")
         return results
 
     def evaluate_experiment_results(self, experiment: Dict[str, Any]) -> Dict[str, Any]:
-        """Ocenia wyniki eksperymentu.
+        """Evaluates experiment results.
         
         Args:
-            experiment: Słownik opisujący eksperyment z wynikami
+            experiment: Dictionary describing the experiment with results
             
         Returns:
-            Słownik z oceną wyników
+            Dictionary with results evaluation
         """
-        logger.info(f"Ocena wyników eksperymentu: {experiment['id']}")
+        logger.info(f"Evaluating experiment results: {experiment['id']}")
         
-        # Sprawdź, czy eksperyment ma wyniki
+        # Check if the experiment has results
         if "results" not in experiment or experiment["status"] != "completed":
             return {"success": False, "improvements": {}, "average_improvement": 0.0}
         
-        # Pobierz metryki
+        # Get metrics
         metrics = experiment["results"]["metrics"]
         
-        # Sprawdź, czy metryki przekraczają próg
+        # Check if metrics exceed the threshold
         improvements = {}
         avg_improvement = 0.0
         metrics_count = 0
@@ -187,7 +187,7 @@ class SelfImprovementManager:
         if metrics_count > 0:
             avg_improvement /= metrics_count
         
-        # Uznaj eksperyment za udany, jeśli średnia poprawa jest dodatnia
+        # Consider the experiment successful if average improvement is positive
         success = avg_improvement > 0 and all(value >= self.improvement_threshold for value in metrics.values())
         
         evaluation = {
@@ -197,35 +197,35 @@ class SelfImprovementManager:
             "evaluated_at": time.time()
         }
         
-        # Zapisz ocenę w eksperymencie
+        # Save the evaluation in the experiment
         experiment["evaluation"] = evaluation
         
-        logger.info(f"Ocena eksperymentu: {success=}, {avg_improvement=}")
+        logger.info(f"Experiment evaluation: {success=}, {avg_improvement=}")
         return evaluation
 
     def apply_successful_improvements(self, model_manager: Any) -> bool:
-        """Aplikuje udane ulepszenia do modelu.
+        """Applies successful improvements to the model.
         
         Args:
-            model_manager: Instancja ModelManager do aktualizacji
+            model_manager: ModelManager instance to update
             
         Returns:
-            True, jeśli zastosowano ulepszenia, False w przeciwnym razie
+            True if improvements were applied, False otherwise
         """
-        logger.info("Aplikowanie udanych ulepszeń do modelu")
+        logger.info("Applying successful improvements to the model")
         
         applied = False
         
-        # Przejrzyj eksperymenty i zastosuj udane
+        # Review experiments and apply successful ones
         for experiment in self.experiments:
             if "evaluation" in experiment and experiment["evaluation"]["success"]:
-                # Zastosuj zmiany parametrów
+                # Apply parameter changes
                 for param_name, param_value in experiment["parameters"].items():
                     if param_name in model_manager.config:
                         old_value = model_manager.config[param_name]
                         model_manager.config[param_name] = param_value
                         
-                        # Zapisz informację o zmianie
+                        # Save information about the change
                         improvement = {
                             "type": "parameter_change",
                             "parameter": param_name,
@@ -239,48 +239,48 @@ class SelfImprovementManager:
                         self.improvement_history.append(improvement)
                         applied = True
                         
-                        logger.info(f"Zastosowano ulepszenie: {param_name} = {param_value}")
+                        logger.info(f"Improvement applied: {param_name} = {param_value}")
         
-        # Zapisz historię ulepszeń
+        # Save improvement history
         if applied:
             self.save_improvement_history()
         
         return applied
 
     def save_improvement_history(self) -> None:
-        """Zapisuje historię ulepszeń do pliku."""
-        logger.info(f"Zapisywanie historii ulepszeń do: {self.history_file}")
+        """Saves improvement history to a file."""
+        logger.info(f"Saving improvement history to: {self.history_file}")
         
         try:
             with open(self.history_file, 'w') as f:
                 json.dump(self.improvement_history, f, indent=2)
         except Exception as e:
-            logger.error(f"Błąd zapisywania historii ulepszeń: {e}")
+            logger.error(f"Error saving improvement history: {e}")
 
     def load_improvement_history(self) -> None:
-        """Wczytuje historię ulepszeń z pliku."""
+        """Loads improvement history from a file."""
         if os.path.exists(self.history_file):
-            logger.info(f"Wczytywanie historii ulepszeń z: {self.history_file}")
+            logger.info(f"Loading improvement history from: {self.history_file}")
             
             try:
                 with open(self.history_file, 'r') as f:
                     self.improvement_history = json.load(f)
             except Exception as e:
-                logger.error(f"Błąd wczytywania historii ulepszeń: {e}")
+                logger.error(f"Error loading improvement history: {e}")
                 self.improvement_history = []
 
     def generate_improvement_report(self) -> str:
-        """Generuje raport z procesu samodoskonalenia.
+        """Generates a report from the self-improvement process.
         
         Returns:
-            Raport tekstowy podsumowujący wprowadzone ulepszenia
+            Text report summarizing implemented improvements
         """
-        logger.info("Generowanie raportu z procesu samodoskonalenia")
+        logger.info("Generating report from self-improvement process")
         
         if not self.improvement_history:
-            return "Brak wprowadzonych ulepszeń."
+            return "No improvements implemented."
         
-        # Grupowanie ulepszeń według typu
+        # Grouping improvements by type
         improvements_by_type = {}
         
         for improvement in self.improvement_history:
@@ -290,22 +290,22 @@ class SelfImprovementManager:
             
             improvements_by_type[imp_type].append(improvement)
         
-        # Generowanie raportu
-        report = "Raport z procesu samodoskonalenia:\n\n"
+        # Generating the report
+        report = "Self-improvement process report:\n\n"
         
         for imp_type, improvements in improvements_by_type.items():
-            report += f"Typ ulepszenia: {imp_type}\n"
-            report += f"Liczba ulepszeń: {len(improvements)}\n"
+            report += f"Improvement type: {imp_type}\n"
+            report += f"Number of improvements: {len(improvements)}\n"
             
             for i, improvement in enumerate(improvements, 1):
-                report += f"\n{i}. Zmiana: {improvement.get('parameter', 'nieznany parametr')}\n"
-                report += f"   Stara wartość: {improvement.get('old_value', 'N/A')}\n"
-                report += f"   Nowa wartość: {improvement.get('new_value', 'N/A')}\n"
+                report += f"\n{i}. Change: {improvement.get('parameter', 'unknown parameter')}\n"
+                report += f"   Old value: {improvement.get('old_value', 'N/A')}\n"
+                report += f"   New value: {improvement.get('new_value', 'N/A')}\n"
                 
-                # Wyświetl poprawę metryk
+                # Display metrics improvement
                 metrics_improvement = improvement.get("metrics_improvement", {})
                 if metrics_improvement:
-                    report += "   Poprawa metryk:\n"
+                    report += "   Metrics improvement:\n"
                     for metric, value in metrics_improvement.items():
                         report += f"   - {metric}: {value:.2f}\n"
         
