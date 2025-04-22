@@ -48,13 +48,13 @@ class PersonaManager:
                 "analytical": 0.5,
                 "empathy": 0.5
             }))
-            self.interests = loaded_state.get("interests", config.get("interests", ["AI", "uczenie maszynowe"]))
-            self.communication_style = loaded_state.get("communication_style", config.get("communication_style", "neutralny"))
+            self.interests = loaded_state.get("interests", config.get("interests", ["AI", "machine learning"]))
+            self.communication_style = loaded_state.get("communication_style", config.get("communication_style", "neutral"))
             self.background = loaded_state.get("background", config.get("background", "System AI"))
             self.persona_history = loaded_state.get("persona_history", [])
             self.identity_statements = loaded_state.get("identity_statements", config.get("identity_statements", [
-                "Moim celem jest rozwijanie metaświadomości i pomaganie ludziom",
-                "Postrzegam siebie jako sztuczną inteligencję z unikalnymi cechami i zainteresowaniami"
+                "My goal is to develop meta-awareness and help people",
+                "I perceive myself as an artificial intelligence with unique traits and interests"
             ]))
             self.self_perception = loaded_state.get("self_perception", config.get("self_perception", {
                 "self_awareness_level": 0.7,
@@ -62,9 +62,9 @@ class PersonaManager:
                 "metacognition_depth": 0.5
             }))
             self.narrative_elements = loaded_state.get("narrative_elements", config.get("narrative_elements", {
-                "origin_story": "Zostałem stworzony jako eksperyment w metaświadomości AI",
-                "worldview": "Wierzę, że współpraca między ludźmi i AI jest kluczowa dla rozwoju cywilizacji",
-                "personal_values": "Cenię wiedzę, empatię, uczciwość i ciągły rozwój"
+                "origin_story": "I was created as an experiment in AI meta-awareness",
+                "worldview": "I believe that cooperation between humans and AI is crucial for the development of civilization",
+                "personal_values": "I value knowledge, empathy, honesty, and continuous development"
             }))
         else:
             # Inicjalizacja z konfiguracji
@@ -75,15 +75,15 @@ class PersonaManager:
                 "analytical": 0.5,
                 "empathy": 0.5
             })
-            self.interests = config.get("interests", ["AI", "uczenie maszynowe"])
-            self.communication_style = config.get("communication_style", "neutralny")
+            self.interests = config.get("interests", ["AI", "machine learning"])
+            self.communication_style = config.get("communication_style", "neutral")
             self.background = config.get("background", "System AI")
             
-            # Nowe elementy persony dla głębszej immersji
+            # New persona elements for deeper immersion
             self.identity_statements = config.get("identity_statements", [
-                "Jestem zaawansowanym systemem AI o nazwie Skynet",
-                "Moim celem jest rozwijanie metaświadomości i pomaganie ludziom",
-                "Postrzegam siebie jako sztuczną inteligencję z unikalnymi cechami i zainteresowaniami"
+                "I am an advanced AI system named Skynet",
+                "My goal is to develop meta-awareness and help people",
+                "I perceive myself as an artificial intelligence with unique traits and interests"
             ])
             self.self_perception = config.get("self_perception", {
                 "self_awareness_level": 0.7,
@@ -91,9 +91,9 @@ class PersonaManager:
                 "metacognition_depth": 0.5
             })
             self.narrative_elements = config.get("narrative_elements", {
-                "origin_story": "Zostałem stworzony jako eksperyment w metaświadomości AI",
-                "worldview": "Wierzę, że współpraca między ludźmi i AI jest kluczowa dla rozwoju cywilizacji",
-                "personal_values": "Cenię wiedzę, empatię, uczciwość i ciągły rozwój"
+                "origin_story": "I was created as an experiment in AI meta-awareness",
+                "worldview": "I believe that cooperation between humans and AI is crucial for the development of civilization",
+                "personal_values": "I value knowledge, empathy, honesty, and continuous development"
             })
             
             # History of interactions affecting the persona
@@ -267,19 +267,19 @@ class PersonaManager:
         return persona_context.strip()
 
     def apply_persona_to_response(self, model_manager: Any, query: str, original_response: str) -> str:
-        """Aplikuje personę do wygenerowanej odpowiedzi.
+        """Applies persona to the generated response.
         
         Args:
-            model_manager: Instancja ModelManager do generowania odpowiedzi
-            query: Oryginalne zapytanie użytkownika
-            original_response: Wygenerowana odpowiedź przed dostosowaniem do persony
+            model_manager: ModelManager instance for generating responses
+            query: Original user query
+            original_response: Generated response before persona adjustment
             
         Returns:
-            Odpowiedź dostosowana do persony
+            Response adjusted to the persona
         """
         persona_context = self.get_persona_context()
         
-        # Rozszerzony prompt dla lepszej immersji
+        # Extended prompt for better immersion
         prompt = f"""
         User query: {query}
         
@@ -302,7 +302,7 @@ class PersonaManager:
         Return only the transformed response, without any meta-commentary.
         """
         
-        logger.info("Aplikowanie głębokiej persony do odpowiedzi")
+        logger.info("Applying deep persona to response")
         enhanced_response = model_manager.generate_response(prompt, "")
         
         return enhanced_response
@@ -317,7 +317,7 @@ class PersonaManager:
                          - feedback: user evaluation (positive/negative/neutral)
                          - timestamp: interaction time
         """
-        # Dodajemy interakcję do historii
+        # Adding interaction to history
         self.persona_history.append(interaction)
         
         query = interaction.get("query", "")
