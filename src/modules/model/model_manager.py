@@ -159,14 +159,15 @@ class ModelManager:
         try:
             # Set a generation config that doesn't cause infinite loops
             gen_kwargs = {
-                "temperature": self.config.get('temperature', 0.5),
+                "temperature": self.config.get('temperature', 0.3),
                 "do_sample": self.config.get('do_sample', True),
                 "num_return_sequences": 1,
                 "pad_token_id": self.tokenizer.eos_token_id,
                 # Add these parameters to prevent infinite loops
-                "max_new_tokens": self.config.get('max_new_tokens', 512),  # Limit new tokens
+                "max_new_tokens": self.config.get('max_new_tokens', 28),  # Limit new tokens
                 "min_length": self.config.get('min_length', 2),        # Ensure some output
-                "repetition_penalty": 1.2,  # Penalize repetition
+                "repetition_penalty": 1.15,  # Penalize repetition
+                "stop": None,
                 "no_repeat_ngram_size": 3  # Prevent repeating 3-grams
             }
             
