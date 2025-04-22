@@ -225,7 +225,8 @@ class ModelManager:
             Complete prompt for the model
         """
         if not context:
-            return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n<|user|>\n{query}\n<|assistant|>\n"
+            #return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n<|user|>\n{query}\n<|assistant|>\n"
+            return f"{MODEL_PROMPT}\n\n{query}\n"
 
         context_str = "\n".join(f"- {item}" for item in context)
         return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\nContext:\n{context_str}\n<|user|>\n{query}\n<|assistant|>\n"

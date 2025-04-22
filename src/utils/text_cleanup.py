@@ -52,8 +52,8 @@ def cleanup_model_output(text: str, aggressive: bool = False) -> str:
     text = re.sub(r'^[^\w\s]*$', '', text, flags=re.MULTILINE)
     
     # Remove multiple brackets, braces, etc.
-    text = re.sub(r'[\)\}\(\{\[\]\/\\]{2,}', ' ', text)
-    text = re.sub(r'[\)\}\(\{\[\]\/\\]+$', '', text, flags=re.MULTILINE)
+    #text = re.sub(r'[\)\}\(\{\[\]\/\\]{2,}', ' ', text)
+    #text = re.sub(r'[\)\}\(\{\[\]\/\\]+$', '', text, flags=re.MULTILINE)
     
     # Remove vertical bars and other separators
     text = re.sub(r'\|+\s*\|+', ' ', text)
