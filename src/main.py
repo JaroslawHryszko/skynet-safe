@@ -69,8 +69,9 @@ class SkynetSystem:
         self.persona = persona_manager.PersonaManager(config["PERSONA"])
         
         # Initialize model with persona (immersive "transformation" of model into persona)
-        self.initialization_response = self.persona.initialize_model_with_persona(self.model)
-        logger.info(f"Model initialized with persona: {self.initialization_response[:50]}...")
+        if os.getenv("INIT_PERSONA", "true").lower() == "true":
+            self.initialization_response = self.persona.initialize_model_with_persona(self.model)
+            logger.info(f"Model initialized with persona: {self.initialization_response[:50]}...")
         
         # Initialize meta-awareness modules (Phase 3)
         self.metawareness = metawareness_manager.MetawarenessManager(config["METAWARENESS"])
