@@ -182,4 +182,6 @@ Detailed project documentation can be found in the following files:
 - [DIAGRAM_WORKFLOW.md](DIAGRAM_WORKFLOW.md) - System workflow diagrams
 - [METAWARENESS_COMPONENTS.md](METAWARENESS_COMPONENTS.md) - Description of meta-awareness components
 
-## Documentation
+## License
+
+AGPL-3.0
