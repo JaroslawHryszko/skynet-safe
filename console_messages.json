@@ -1,0 +1,17 @@
+[
+  {
+    "sender": "user1",
+    "content": "Cze\u015b\u0107, czy mnie s\u0142yszysz?",
+    "timestamp": 1745044587
+  },
+  {
+    "sender": "user1",
+    "content": "Co potrafisz?",
+    "timestamp": 1745044597
+  },
+  {
+    "sender": "user2",
+    "content": "Co wiesz o sztucznej inteligencji?",
+    "timestamp": 1745044607
+  }
+]

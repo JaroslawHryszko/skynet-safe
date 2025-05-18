@@ -1,0 +1,38 @@
+[
+  {
+    "type": "parameter_change",
+    "parameter": "temperature",
+    "old_value": 0.7,
+    "new_value": 0.5,
+    "timestamp": 1745047738.2702885,
+    "experiment_id": 1,
+    "metrics_improvement": {
+      "response_quality": 0.15,
+      "coherence": 0.05
+    }
+  },
+  {
+    "type": "parameter_change",
+    "parameter": "temperature",
+    "old_value": 0.7,
+    "new_value": 0.5,
+    "timestamp": 1745047791.7115617,
+    "experiment_id": 1,
+    "metrics_improvement": {
+      "response_quality": 0.15,
+      "coherence": 0.05
+    }
+  },
+  {
+    "type": "parameter_change",
+    "parameter": "temperature",
+    "old_value": 0.7,
+    "new_value": 0.5,
+    "timestamp": 1745048099.291499,
+    "experiment_id": 1,
+    "metrics_improvement": {
+      "response_quality": 0.15,
+      "coherence": 0.05
+    }
+  }
+]

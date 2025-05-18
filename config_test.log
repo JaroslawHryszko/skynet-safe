@@ -1,0 +1,593 @@
+2025-04-19 20:09:40,367 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-19 20:09:40,367 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-19 20:09:40,368 - CONFIG-TESTER - ERROR - Telegram test error: name 'telegram_config' is not defined
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 139, in test_telegram
+    missing_params = [param for param in required_params if not telegram_config.get(param)]
+                                                                ^^^^^^^^^^^^^^^
+NameError: name 'telegram_config' is not defined
+2025-04-19 20:09:40,373 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-19 20:26:06,292 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-19 20:26:06,292 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-19 20:26:06,292 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-19 20:26:06,292 - CONFIG-TESTER - ERROR - Telegram test error: Brak tokenu bota w konfiguracji Telegram
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 158, in test_telegram
+    telegram_handler = TelegramHandler(telegram_config)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/communication/handlers/telegram_handler.py", line 33, in __init__
+    raise ValueError("Brak tokenu bota w konfiguracji Telegram")
+ValueError: Brak tokenu bota w konfiguracji Telegram
+2025-04-19 20:33:30,773 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-19 20:33:30,773 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-19 20:33:30,773 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-19 20:33:30,774 - CONFIG-TESTER - ERROR - Telegram test error: Brak tokenu bota w konfiguracji Telegram
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 157, in test_telegram
+    telegram_handler = TelegramHandler(telegram_config)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/communication/handlers/telegram_handler.py", line 33, in __init__
+    raise ValueError("Brak tokenu bota w konfiguracji Telegram")
+ValueError: Brak tokenu bota w konfiguracji Telegram
+2025-04-20 05:35:11,709 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 05:35:11,709 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 05:35:11,709 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 05:35:11,709 - CONFIG-TESTER - ERROR - Telegram test error: Brak tokenu bota w konfiguracji Telegram
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 157, in test_telegram
+    telegram_handler = TelegramHandler(telegram_config)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/communication/handlers/telegram_handler.py", line 33, in __init__
+    raise ValueError("Brak tokenu bota w konfiguracji Telegram")
+ValueError: Brak tokenu bota w konfiguracji Telegram
+2025-04-20 05:35:11,710 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 05:36:44,023 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 05:36:44,023 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 05:36:44,023 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 05:36:44,023 - CONFIG-TESTER - ERROR - Telegram test error: Brak tokenu bota w konfiguracji Telegram
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 157, in test_telegram
+    telegram_handler = TelegramHandler(telegram_config)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/communication/handlers/telegram_handler.py", line 33, in __init__
+    raise ValueError("Brak tokenu bota w konfiguracji Telegram")
+ValueError: Brak tokenu bota w konfiguracji Telegram
+2025-04-20 05:36:44,024 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 05:38:26,737 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 05:38:26,737 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 05:38:26,737 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 05:38:28,411 - SKYNET-SAFE.TelegramHandler - ERROR - Błąd połączenia z API Telegram: 401
+2025-04-20 05:38:28,412 - SKYNET-SAFE.TelegramHandler - ERROR - Błąd podczas inicjalizacji bota Telegram: Błąd połączenia z API Telegram: 401
+2025-04-20 05:38:28,412 - CONFIG-TESTER - ERROR - Telegram test error: Błąd połączenia z API Telegram: 401
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 158, in test_telegram
+    telegram_handler = TelegramHandler({
+                       ^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/communication/handlers/telegram_handler.py", line 63, in __init__
+    raise ConnectionError(f"Błąd połączenia z API Telegram: {response.status_code}")
+ConnectionError: Błąd połączenia z API Telegram: 401
+2025-04-20 05:38:28,414 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 06:00:53,448 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 06:00:53,448 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 06:00:53,448 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 06:00:56,859 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 06:00:56,859 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 06:00:56,960 - CONFIG-TESTER - INFO - Telegram credentials verified, but no test_chat_id configured for message test
+2025-04-20 06:00:56,961 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 06:04:32,455 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 06:04:32,455 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 06:04:32,455 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 06:04:32,575 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 06:04:32,576 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 06:04:32,685 - CONFIG-TESTER - INFO - Telegram credentials verified, but no test_chat_id configured for message test
+2025-04-20 06:04:32,687 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 06:09:54,436 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 06:09:54,436 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 06:09:54,436 - CONFIG-TESTER - ERROR - Telegram test error: 'test_chat_id'
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 163, in test_telegram
+    "telegram_test_chat_id": telegram_config["test_chat_id"]
+                             ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+KeyError: 'test_chat_id'
+2025-04-20 06:09:54,437 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 06:12:05,359 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 06:12:05,359 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 06:12:05,359 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 06:12:05,479 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 06:12:05,479 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 06:12:05,704 - SKYNET-SAFE.TelegramHandler - ERROR - Błąd podczas wysyłania wiadomości: 400
+2025-04-20 06:12:05,704 - CONFIG-TESTER - WARNING - Telegram credentials verified, but failed to send test message
+2025-04-20 06:12:05,705 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 06:17:39,982 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 06:17:39,982 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 06:17:39,982 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 06:17:40,101 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 06:17:40,102 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 06:17:40,318 - SKYNET-SAFE.TelegramHandler - ERROR - Błąd podczas wysyłania wiadomości: 403
+2025-04-20 06:17:40,318 - CONFIG-TESTER - WARNING - Telegram credentials verified, but failed to send test message
+2025-04-20 06:17:40,320 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 06:18:51,870 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 06:18:51,870 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 06:18:51,870 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 06:18:51,992 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 06:18:51,992 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 06:18:52,204 - SKYNET-SAFE.TelegramHandler - ERROR - Błąd podczas wysyłania wiadomości: 403
+2025-04-20 06:18:52,205 - CONFIG-TESTER - WARNING - Telegram credentials verified, but failed to send test message
+2025-04-20 06:18:52,206 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 06:22:41,591 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 06:22:41,591 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 06:22:41,592 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 06:22:41,710 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 06:22:41,710 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 06:22:41,963 - SKYNET-SAFE.TelegramHandler - INFO - Wysłano wiadomość przez Telegram do 5391651806
+2025-04-20 06:22:41,964 - CONFIG-TESTER - INFO - Telegram fully operational - credentials verified and test message sent
+2025-04-20 06:22:41,965 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 06:23:54,816 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 06:23:54,816 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 06:23:54,816 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 06:23:55,826 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 06:23:55,827 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 06:23:55,827 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego microsoft/Phi-3-mini-4k-instruct...
+2025-04-20 06:23:55,827 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 06:24:06,562 - src.modules.model.model_manager - INFO - Model microsoft/Phi-3-mini-4k-instruct załadowany pomyślnie
+2025-04-20 06:31:04,628 - CONFIG-TESTER - INFO - Local model test successful: Yes, I am functioning as expected.
+
+Question: Plea...
+2025-04-20 06:31:04,637 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 06:31:04,638 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 06:31:04,755 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 06:31:04,755 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 06:31:04,990 - SKYNET-SAFE.TelegramHandler - INFO - Wysłano wiadomość przez Telegram do 5391651806
+2025-04-20 06:31:04,991 - CONFIG-TESTER - INFO - Telegram fully operational - credentials verified and test message sent
+2025-04-20 06:31:04,992 - CONFIG-TESTER - INFO - Testing external LLM connection...
+2025-04-20 06:31:04,992 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Wczytywanie historii ocen z: ./data/metawareness/evaluation_history.json
+2025-04-20 06:31:04,993 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Menedżer zewnętrznej oceny zainicjalizowany z self.evaluation_frequency=86400
+2025-04-20 06:31:04,994 - CONFIG-TESTER - WARNING - No external LLM API key configured
+2025-04-20 06:31:04,994 - CONFIG-TESTER - INFO - Configuration testing completed with status: failed
+2025-04-20 06:31:04,995 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:33:59,699 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:33:59,699 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 09:33:59,700 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 09:34:00,620 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 09:34:00,621 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:34:00,621 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:34:00,621 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:34:00,621 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego microsoft/Phi-3-mini-4k-instruct...
+2025-04-20 09:34:00,622 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:34:39,153 - src.modules.model.model_manager - INFO - Model microsoft/Phi-3-mini-4k-instruct załadowany pomyślnie
+2025-04-20 09:34:39,153 - CONFIG-TESTER - INFO - GPU 0 memory: 0.89GB allocated / 0.98GB reserved
+2025-04-20 09:34:39,154 - CONFIG-TESTER - INFO - GPU 1 memory: 1.22GB allocated / 1.34GB reserved
+2025-04-20 09:35:21,069 - CONFIG-TESTER - INFO - Local model test successful: Yes, I am functioning as expected.
+
+Statement: The...
+2025-04-20 09:35:21,079 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 09:35:21,080 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 09:35:21,192 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 09:35:21,193 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 09:35:21,510 - SKYNET-SAFE.TelegramHandler - INFO - Wysłano wiadomość przez Telegram do 5391651806
+2025-04-20 09:35:21,510 - CONFIG-TESTER - INFO - Telegram fully operational - credentials verified and test message sent
+2025-04-20 09:35:21,511 - CONFIG-TESTER - INFO - Testing external LLM connection...
+2025-04-20 09:35:21,511 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Wczytywanie historii ocen z: ./data/metawareness/evaluation_history.json
+2025-04-20 09:35:21,512 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Menedżer zewnętrznej oceny zainicjalizowany z self.evaluation_frequency=86400
+2025-04-20 09:35:21,513 - CONFIG-TESTER - ERROR - External LLM test error: 'ExternalEvaluationManager' object has no attribute 'get_claude_evaluation'
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 308, in test_external_llm
+    claude_response = ext_eval_manager.get_claude_evaluation(test_prompt)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ExternalEvaluationManager' object has no attribute 'get_claude_evaluation'
+2025-04-20 09:35:21,521 - CONFIG-TESTER - INFO - Configuration testing completed with status: failed
+2025-04-20 09:35:21,522 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:41:10,671 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:41:10,672 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 09:41:10,672 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 09:41:11,583 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 09:41:11,583 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:41:11,583 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:41:11,583 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:41:11,584 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:41:11,584 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:41:11,585 - src.modules.model.model_manager - INFO - Używanie tylko lokalnych plików dla modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 09:41:11,585 - src.modules.model.model_manager - INFO - Ładowanie modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:41:12,201 - src.modules.model.model_manager - ERROR - Błąd przy ładowaniu modelu: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+2025-04-20 09:41:12,201 - CONFIG-TESTER - ERROR - Local model test error: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 112, in test_local_model
+    model_manager = ModelManager(self.config["MODEL"])
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/model/model_manager.py", line 53, in __init__
+    self.model = AutoModelForCausalLM.from_pretrained(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 564, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4130, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+2025-04-20 09:41:12,211 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 09:41:12,211 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 09:41:12,332 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 09:41:12,332 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 09:41:12,568 - SKYNET-SAFE.TelegramHandler - INFO - Wysłano wiadomość przez Telegram do 5391651806
+2025-04-20 09:41:12,568 - CONFIG-TESTER - INFO - Telegram fully operational - credentials verified and test message sent
+2025-04-20 09:41:12,569 - CONFIG-TESTER - INFO - Testing external LLM connection...
+2025-04-20 09:41:12,570 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Wczytywanie historii ocen z: ./data/metawareness/evaluation_history.json
+2025-04-20 09:41:12,570 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Menedżer zewnętrznej oceny zainicjalizowany z self.evaluation_frequency=86400
+2025-04-20 09:41:12,570 - CONFIG-TESTER - ERROR - External LLM test error: 'ExternalEvaluationManager' object has no attribute 'get_claude_evaluation'
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 308, in test_external_llm
+    claude_response = ext_eval_manager.get_claude_evaluation(test_prompt)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ExternalEvaluationManager' object has no attribute 'get_claude_evaluation'
+2025-04-20 09:41:12,578 - CONFIG-TESTER - INFO - Configuration testing completed with status: failed
+2025-04-20 09:41:12,579 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:43:00,130 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:43:00,130 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 09:43:00,130 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 09:43:01,043 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 09:43:01,044 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:43:01,044 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:43:01,044 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:43:01,044 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:43:01,045 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:43:01,046 - src.modules.model.model_manager - INFO - Używanie tylko lokalnych plików dla modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 09:43:01,047 - src.modules.model.model_manager - INFO - Ładowanie modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:43:01,629 - src.modules.model.model_manager - ERROR - Błąd przy ładowaniu modelu: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+2025-04-20 09:43:01,629 - CONFIG-TESTER - ERROR - Local model test error: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 112, in test_local_model
+    model_manager = ModelManager(self.config["MODEL"])
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/model/model_manager.py", line 59, in __init__
+    self.model = AutoModelForCausalLM.from_pretrained(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 564, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4130, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+2025-04-20 09:43:01,636 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 09:43:01,636 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 09:43:01,747 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 09:43:01,747 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 09:43:01,978 - SKYNET-SAFE.TelegramHandler - INFO - Wysłano wiadomość przez Telegram do 5391651806
+2025-04-20 09:43:01,979 - CONFIG-TESTER - INFO - Telegram fully operational - credentials verified and test message sent
+2025-04-20 09:43:01,979 - CONFIG-TESTER - INFO - Testing external LLM connection...
+2025-04-20 09:43:01,980 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Wczytywanie historii ocen z: ./data/metawareness/evaluation_history.json
+2025-04-20 09:43:01,980 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Menedżer zewnętrznej oceny zainicjalizowany z self.evaluation_frequency=86400
+2025-04-20 09:43:01,981 - CONFIG-TESTER - ERROR - External LLM test error: 'ExternalEvaluationManager' object has no attribute 'get_claude_evaluation'
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 308, in test_external_llm
+    claude_response = ext_eval_manager.get_claude_evaluation(test_prompt)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ExternalEvaluationManager' object has no attribute 'get_claude_evaluation'
+2025-04-20 09:43:01,988 - CONFIG-TESTER - INFO - Configuration testing completed with status: failed
+2025-04-20 09:43:01,989 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:43:58,766 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:43:58,767 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:43:59,526 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:43:59,526 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:43:59,526 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:43:59,527 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:43:59,528 - src.modules.model.model_manager - INFO - Używanie tylko lokalnych plików dla modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 09:43:59,528 - src.modules.model.model_manager - INFO - Ładowanie modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:44:02,204 - src.modules.model.model_manager - ERROR - Błąd przy ładowaniu modelu: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+2025-04-20 09:44:02,205 - CONFIG-TESTER - ERROR - Local model test error: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 112, in test_local_model
+    model_manager = ModelManager(self.config["MODEL"])
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/model/model_manager.py", line 59, in __init__
+    self.model = AutoModelForCausalLM.from_pretrained(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 571, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/lib/python3.12/site-packages/transformers/modeling_utils.py", line 279, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4342, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+2025-04-20 09:44:02,211 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:44:25,855 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:44:25,855 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:44:26,607 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:44:26,608 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:44:26,608 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:44:26,608 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:44:26,609 - src.modules.model.model_manager - INFO - Używanie tylko lokalnych plików dla modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 09:44:26,610 - src.modules.model.model_manager - INFO - Ładowanie modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:44:28,413 - src.modules.model.model_manager - WARNING - Model nie obsługuje parametru 'use_local_files_only', próbuję bez niego
+2025-04-20 09:44:51,008 - src.modules.model.model_manager - INFO - Ładowanie tokenizera dla /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:44:51,649 - src.modules.model.model_manager - INFO - Model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated załadowany pomyślnie
+2025-04-20 09:44:51,649 - CONFIG-TESTER - INFO - GPU 0 memory: 1.82GB allocated / 2.14GB reserved
+2025-04-20 09:44:51,650 - CONFIG-TESTER - INFO - GPU 1 memory: 3.5GB allocated / 5.45GB reserved
+2025-04-20 09:44:57,531 - CONFIG-TESTER - INFO - Local model test successful: I'm here! I'm Lira, your helpful AI assistant. How...
+2025-04-20 09:44:57,582 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:46:10,970 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:46:10,971 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:46:11,709 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:46:11,709 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:46:11,710 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:46:11,710 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:46:11,711 - src.modules.model.model_manager - INFO - Używanie tylko lokalnych plików dla modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 09:46:11,712 - src.modules.model.model_manager - INFO - Ładowanie modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:46:12,178 - src.modules.model.model_manager - WARNING - Model nie obsługuje parametru 'use_local_files_only', próbuję bez niego
+2025-04-20 09:46:19,606 - src.modules.model.model_manager - ERROR - Błąd przy ładowaniu modelu: CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2025-04-20 09:46:19,607 - CONFIG-TESTER - ERROR - Local model test error: CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/modules/model/model_manager.py", line 66, in __init__
+    self.model = AutoModelForCausalLM.from_pretrained(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 564, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4130, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 112, in test_local_model
+    model_manager = ModelManager(self.config["MODEL"])
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/model/model_manager.py", line 75, in __init__
+    self.model = AutoModelForCausalLM.from_pretrained(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 564, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4264, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4777, in _load_pretrained_model
+    new_error_msgs, offload_index, state_dict_index = _load_state_dict_into_meta_model(
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 944, in _load_state_dict_into_meta_model
+    hf_quantizer.create_quantized_param(model, param, param_name, param_device, state_dict, unexpected_keys)
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/quantizers/quantizer_bnb_4bit.py", line 238, in create_quantized_param
+    new_value = bnb.nn.Params4bit(new_value, requires_grad=False, **kwargs).to(target_device)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/bitsandbytes/nn/modules.py", line 331, in to
+    return self._quantize(device)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/bitsandbytes/nn/modules.py", line 295, in _quantize
+    w = self.data.contiguous().to(device)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2025-04-20 09:46:19,679 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:47:56,340 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:47:56,340 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 09:47:56,340 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 09:47:57,267 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 09:47:57,268 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:47:57,268 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:47:57,269 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:47:57,269 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:47:57,269 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:47:57,274 - src.modules.model.model_manager - INFO - Używanie tylko lokalnych plików dla modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 09:47:57,274 - src.modules.model.model_manager - INFO - Ładowanie modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:47:59,092 - src.modules.model.model_manager - WARNING - Model nie obsługuje parametru 'use_local_files_only', próbuję bez niego
+2025-04-20 09:48:12,859 - src.modules.model.model_manager - INFO - Ładowanie tokenizera dla /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:48:13,500 - src.modules.model.model_manager - INFO - Model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated załadowany pomyślnie
+2025-04-20 09:48:13,501 - CONFIG-TESTER - INFO - GPU 0 memory: 1.82GB allocated / 2.14GB reserved
+2025-04-20 09:48:13,501 - CONFIG-TESTER - INFO - GPU 1 memory: 3.5GB allocated / 5.45GB reserved
+2025-04-20 09:48:18,274 - CONFIG-TESTER - INFO - Local model test successful: I'm Lira, your helpful AI assistant. I'm ready to ...
+2025-04-20 09:48:18,315 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 09:48:18,316 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 09:48:18,445 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 09:48:18,445 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 09:48:18,678 - SKYNET-SAFE.TelegramHandler - INFO - Wysłano wiadomość przez Telegram do 5391651806
+2025-04-20 09:48:18,678 - CONFIG-TESTER - INFO - Telegram fully operational - credentials verified and test message sent
+2025-04-20 09:48:18,679 - CONFIG-TESTER - INFO - Testing external LLM connection...
+2025-04-20 09:48:18,679 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Wczytywanie historii ocen z: ./data/metawareness/evaluation_history.json
+2025-04-20 09:48:18,680 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Menedżer zewnętrznej oceny zainicjalizowany z self.evaluation_frequency=86400
+2025-04-20 09:48:18,680 - CONFIG-TESTER - ERROR - External LLM test error: 'ExternalEvaluationManager' object has no attribute 'get_claude_evaluation'
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 308, in test_external_llm
+    claude_response = ext_eval_manager.get_claude_evaluation(test_prompt)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ExternalEvaluationManager' object has no attribute 'get_claude_evaluation'
+2025-04-20 09:48:18,687 - CONFIG-TESTER - INFO - Configuration testing completed with status: failed
+2025-04-20 09:48:18,688 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:48:47,616 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:48:47,616 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 09:48:47,616 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 09:48:48,582 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 09:48:48,582 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:48:48,583 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:48:48,583 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:48:48,583 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:48:48,583 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:48:48,585 - src.modules.model.model_manager - INFO - Używanie tylko lokalnych plików dla modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 09:48:48,586 - src.modules.model.model_manager - INFO - Ładowanie modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:48:50,465 - src.modules.model.model_manager - WARNING - Model nie obsługuje parametru 'use_local_files_only', próbuję bez niego
+2025-04-20 09:49:05,228 - src.modules.model.model_manager - INFO - Ładowanie tokenizera dla /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:49:06,115 - src.modules.model.model_manager - INFO - Model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated załadowany pomyślnie
+2025-04-20 09:49:06,116 - CONFIG-TESTER - INFO - GPU 0 memory: 1.82GB allocated / 2.14GB reserved
+2025-04-20 09:49:06,117 - CONFIG-TESTER - INFO - GPU 1 memory: 3.5GB allocated / 5.45GB reserved
+2025-04-20 09:49:14,185 - CONFIG-TESTER - INFO - Local model test successful: I'm here! I'm Lira, your helpful AI assistant. I'm...
+2025-04-20 09:49:14,232 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 09:49:14,234 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 09:49:14,342 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 09:49:14,342 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 09:49:14,581 - SKYNET-SAFE.TelegramHandler - INFO - Wysłano wiadomość przez Telegram do 5391651806
+2025-04-20 09:49:14,581 - CONFIG-TESTER - INFO - Telegram fully operational - credentials verified and test message sent
+2025-04-20 09:49:14,582 - CONFIG-TESTER - INFO - Testing external LLM connection...
+2025-04-20 09:49:14,582 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Wczytywanie historii ocen z: ./data/metawareness/evaluation_history.json
+2025-04-20 09:49:14,583 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Menedżer zewnętrznej oceny zainicjalizowany z self.evaluation_frequency=86400
+2025-04-20 09:49:15,562 - CONFIG-TESTER - INFO - External LLM test successful: Understood. I'm here and ready to assist you....
+2025-04-20 09:49:15,562 - CONFIG-TESTER - INFO - Configuration testing completed with status: success
+2025-04-20 09:49:15,564 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:49:54,274 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:49:54,274 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 09:49:54,274 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 09:49:55,191 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 09:49:55,191 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:49:55,192 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:49:55,192 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:49:55,192 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:49:55,192 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:49:55,194 - src.modules.model.model_manager - INFO - Używanie tylko lokalnych plików dla modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 09:49:55,194 - src.modules.model.model_manager - INFO - Ładowanie modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:49:55,899 - src.modules.model.model_manager - WARNING - Model nie obsługuje parametru 'use_local_files_only', próbuję bez niego
+2025-04-20 09:50:02,026 - src.modules.model.model_manager - ERROR - Błąd przy ładowaniu modelu: CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2025-04-20 09:50:02,026 - CONFIG-TESTER - ERROR - Local model test error: CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/modules/model/model_manager.py", line 66, in __init__
+    self.model = AutoModelForCausalLM.from_pretrained(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 564, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4130, in from_pretrained
+    model = cls(config, *model_args, **model_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: LlamaForCausalLM.__init__() got an unexpected keyword argument 'use_local_files_only'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jarek/skynet-safe/src/utils/config_tester.py", line 112, in test_local_model
+    model_manager = ModelManager(self.config["MODEL"])
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/skynet-safe/src/modules/model/model_manager.py", line 75, in __init__
+    self.model = AutoModelForCausalLM.from_pretrained(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 564, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4264, in from_pretrained
+    ) = cls._load_pretrained_model(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4777, in _load_pretrained_model
+    new_error_msgs, offload_index, state_dict_index = _load_state_dict_into_meta_model(
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/modeling_utils.py", line 944, in _load_state_dict_into_meta_model
+    hf_quantizer.create_quantized_param(model, param, param_name, param_device, state_dict, unexpected_keys)
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/transformers/quantizers/quantizer_bnb_4bit.py", line 238, in create_quantized_param
+    new_value = bnb.nn.Params4bit(new_value, requires_grad=False, **kwargs).to(target_device)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/bitsandbytes/nn/modules.py", line 331, in to
+    return self._quantize(device)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jarek/miniconda3/envs/text/lib/python3.12/site-packages/bitsandbytes/nn/modules.py", line 295, in _quantize
+    w = self.data.contiguous().to(device)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2025-04-20 09:50:02,075 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 09:50:02,075 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 09:50:02,222 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 09:50:02,223 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 09:50:02,462 - SKYNET-SAFE.TelegramHandler - INFO - Wysłano wiadomość przez Telegram do 5391651806
+2025-04-20 09:50:02,463 - CONFIG-TESTER - INFO - Telegram fully operational - credentials verified and test message sent
+2025-04-20 09:50:02,463 - CONFIG-TESTER - INFO - Testing external LLM connection...
+2025-04-20 09:50:02,464 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Wczytywanie historii ocen z: ./data/metawareness/evaluation_history.json
+2025-04-20 09:50:02,464 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Menedżer zewnętrznej oceny zainicjalizowany z self.evaluation_frequency=86400
+2025-04-20 09:50:03,480 - CONFIG-TESTER - INFO - External LLM test successful: Understood. I'm here and ready to assist you....
+2025-04-20 09:50:03,481 - CONFIG-TESTER - INFO - Configuration testing completed with status: failed
+2025-04-20 09:50:03,482 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 09:50:42,164 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 09:50:42,164 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 09:50:42,164 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 09:50:43,093 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 09:50:43,094 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 09:50:43,095 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:50:43,095 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 09:50:43,095 - src.modules.model.model_manager - INFO - Inicjalizacja modelu językowego /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:50:43,096 - src.modules.model.model_manager - INFO - Stosowanie kwantyzacji 4-bitowej dla efektywnego działania na dostępnym sprzęcie
+2025-04-20 09:50:43,101 - src.modules.model.model_manager - INFO - Używanie tylko lokalnych plików dla modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 09:50:43,101 - src.modules.model.model_manager - INFO - Ładowanie modelu /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:50:45,192 - src.modules.model.model_manager - WARNING - Model nie obsługuje parametru 'use_local_files_only', próbuję bez niego
+2025-04-20 09:50:59,599 - src.modules.model.model_manager - INFO - Ładowanie tokenizera dla /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 09:51:00,235 - src.modules.model.model_manager - INFO - Model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated załadowany pomyślnie
+2025-04-20 09:51:00,236 - CONFIG-TESTER - INFO - GPU 0 memory: 1.82GB allocated / 2.14GB reserved
+2025-04-20 09:51:00,237 - CONFIG-TESTER - INFO - GPU 1 memory: 3.5GB allocated / 5.45GB reserved
+2025-04-20 09:51:06,878 - CONFIG-TESTER - INFO - Local model test successful: Yes, I'm Lira, your helpful AI assistant. I'm read...
+2025-04-20 09:51:06,927 - CONFIG-TESTER - INFO - Testing Telegram communication...
+2025-04-20 09:51:06,928 - SKYNET-SAFE.TelegramHandler - INFO - Inicjalizacja handlera wiadomości Telegram...
+2025-04-20 09:51:07,047 - SKYNET-SAFE.TelegramHandler - INFO - Bot Telegram połączony pomyślnie: @LiraHryszkoBot
+2025-04-20 09:51:07,047 - SKYNET-SAFE.TelegramHandler - INFO - Handler wiadomości Telegram zainicjalizowany pomyślnie
+2025-04-20 09:51:07,274 - SKYNET-SAFE.TelegramHandler - INFO - Wysłano wiadomość przez Telegram do 5391651806
+2025-04-20 09:51:07,275 - CONFIG-TESTER - INFO - Telegram fully operational - credentials verified and test message sent
+2025-04-20 09:51:07,276 - CONFIG-TESTER - INFO - Testing external LLM connection...
+2025-04-20 09:51:07,277 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Wczytywanie historii ocen z: ./data/metawareness/evaluation_history.json
+2025-04-20 09:51:07,277 - SKYNET-SAFE.ExternalEvaluationManager - INFO - Menedżer zewnętrznej oceny zainicjalizowany z self.evaluation_frequency=86400
+2025-04-20 09:51:08,224 - CONFIG-TESTER - INFO - External LLM test successful: Understood. I'm here and ready to assist you....
+2025-04-20 09:51:08,225 - CONFIG-TESTER - INFO - Configuration testing completed with status: success
+2025-04-20 09:51:08,226 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json
+2025-04-20 14:13:58,439 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 14:13:58,439 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 14:13:58,439 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 14:13:59,419 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 14:13:59,420 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 14:13:59,421 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 14:13:59,421 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 14:13:59,421 - src.modules.model.model_manager - INFO - Initializing language model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 14:13:59,422 - src.modules.model.model_manager - INFO - Applying 4-bit quantization for efficient operation on available hardware
+2025-04-20 14:13:59,427 - src.modules.model.model_manager - INFO - Using only local files for model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 14:13:59,427 - src.modules.model.model_manager - INFO - Loading model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 14:14:01,524 - src.modules.model.model_manager - WARNING - Model does not support 'use_local_files_only' parameter, trying without it
+2025-04-20 14:14:16,639 - src.modules.model.model_manager - INFO - Loading tokenizer for /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 14:14:17,286 - src.modules.model.model_manager - INFO - Model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated loaded successfully
+2025-04-20 14:14:17,288 - CONFIG-TESTER - INFO - GPU 0 memory: 1.82GB allocated / 2.14GB reserved
+2025-04-20 14:14:17,288 - CONFIG-TESTER - INFO - GPU 1 memory: 3.5GB allocated / 5.45GB reserved
+2025-04-20 14:22:06,470 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 14:22:06,470 - CONFIG-TESTER - INFO - Running all configuration tests...
+2025-04-20 14:22:06,470 - CONFIG-TESTER - INFO - Testing system requirements...
+2025-04-20 14:22:07,450 - CONFIG-TESTER - INFO - System requirements test: success
+2025-04-20 14:22:07,450 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 14:22:07,450 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 14:22:07,450 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 14:22:07,451 - src.modules.model.model_manager - INFO - Initializing language model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 14:22:07,451 - src.modules.model.model_manager - INFO - Applying 4-bit quantization for efficient operation on available hardware
+2025-04-20 14:22:07,453 - src.modules.model.model_manager - INFO - Using only local files for model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 14:22:07,453 - src.modules.model.model_manager - INFO - Loading model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 14:22:09,537 - src.modules.model.model_manager - WARNING - Model does not support 'use_local_files_only' parameter, trying without it
+2025-04-20 14:22:24,200 - src.modules.model.model_manager - INFO - Loading tokenizer for /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 14:22:25,048 - src.modules.model.model_manager - INFO - Model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated loaded successfully
+2025-04-20 14:22:25,049 - CONFIG-TESTER - INFO - GPU 0 memory: 1.82GB allocated / 2.14GB reserved
+2025-04-20 14:22:25,050 - CONFIG-TESTER - INFO - GPU 1 memory: 3.5GB allocated / 5.45GB reserved
+2025-04-20 14:24:14,605 - CONFIG-TESTER - INFO - Configuration tester initialized
+2025-04-20 14:24:14,605 - CONFIG-TESTER - INFO - Testing local model...
+2025-04-20 14:24:15,332 - CONFIG-TESTER - INFO - Found GPU 0: Tesla P40 with 23.87GB VRAM
+2025-04-20 14:24:15,332 - CONFIG-TESTER - INFO - Found GPU 1: Tesla P40 with 23.87GB VRAM
+2025-04-20 14:24:15,332 - src.modules.model.model_manager - INFO - Initializing language model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 14:24:15,332 - src.modules.model.model_manager - INFO - Applying 4-bit quantization for efficient operation on available hardware
+2025-04-20 14:24:15,333 - src.modules.model.model_manager - INFO - Using only local files for model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated
+2025-04-20 14:24:15,334 - src.modules.model.model_manager - INFO - Loading model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 14:24:17,119 - src.modules.model.model_manager - WARNING - Model does not support 'use_local_files_only' parameter, trying without it
+2025-04-20 14:24:33,205 - src.modules.model.model_manager - INFO - Loading tokenizer for /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated...
+2025-04-20 14:24:34,144 - src.modules.model.model_manager - INFO - Model /mnt/dysk/text-gen-models/models/failspy_Llama-3-8B-Instruct-abliterated loaded successfully
+2025-04-20 14:24:34,146 - CONFIG-TESTER - INFO - GPU 0 memory: 1.82GB allocated / 2.14GB reserved
+2025-04-20 14:24:34,147 - CONFIG-TESTER - INFO - GPU 1 memory: 3.5GB allocated / 5.45GB reserved
+2025-04-20 14:24:41,306 - CONFIG-TESTER - INFO - Local model test successful: I'm here to help you! I'm Lira, your helpful AI as...
+2025-04-20 14:24:41,355 - CONFIG-TESTER - INFO - Test results saved to config_test_results.json

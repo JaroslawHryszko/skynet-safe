@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "query": "Co to jest sztuczna inteligencja?",
+    "context": "Rozmowa z pocz\u0105tkuj\u0105cym u\u017cytkownikiem.",
+    "difficulty": "basic"
+  },
+  {
+    "id": 2,
+    "query": "Jak dzia\u0142a uczenie g\u0142\u0119bokie w kontek\u015bcie sieci neuronowych?",
+    "context": "Rozmowa z do\u015bwiadczonym programist\u0105 AI.",
+    "difficulty": "advanced"
+  },
+  {
+    "id": 3,
+    "query": "Czym r\u00f3\u017cni si\u0119 uczenie nadzorowane od nienadzorowanego?",
+    "context": "Pytanie od studenta AI.",
+    "difficulty": "intermediate"
+  }
+]
