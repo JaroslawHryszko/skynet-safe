@@ -18,14 +18,6 @@ The system consists of the following main modules:
 7. **Persona Module** - provides a consistent character and communication style
 8. **Meta-awareness Module** - develops reflection and self-improvement capabilities
 
-## System Requirements
-
-- Python 3.8+
-- PyTorch 2.0+
-- Two NVIDIA P40 cards (or equivalent)
-- 32 GB RAM
-- Stable internet connection
-
 ## Installation
 
 1. Clone the repository:
