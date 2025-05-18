@@ -11,8 +11,13 @@ import time
 import signal
 import atexit
 import json
+import subprocess
 from datetime import datetime
 import argparse
+from dotenv import load_dotenv
+
+# Load environment variables first
+load_dotenv()
 
 from src.main import SkynetSystem
 from src.config import config
@@ -21,15 +26,31 @@ from src.config import config
 # Setup logging
 def setup_logging(log_file):
     """Configure logging for daemon mode."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
-    return logging.getLogger("SKYNET-DAEMON")
+    # Create directory for log file if it doesn't exist
+    log_dir = os.path.dirname(log_file)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+    
+    # Configure root logger
+    logger = logging.getLogger("SKYNET-DAEMON")
+    logger.setLevel(logging.INFO)
+    
+    # File handler - always log to file
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
+    
+    # Only add console logging if not in daemon mode
+    if sys.stdout.isatty():
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        console_handler.setFormatter(console_formatter)
+        logger.addHandler(console_handler)
+    
+    return logger
 
 
 # Daemon class
@@ -44,6 +65,9 @@ class Daemon:
         self.stdout = stdout
         self.stderr = stderr
         self.pidfile = pidfile
+        
+        # Ensure pidfile directory exists
+        os.makedirs(os.path.dirname(self.pidfile), exist_ok=True)
         
     def daemonize(self):
         """
@@ -61,9 +85,9 @@ class Daemon:
             sys.exit(1)
     
         # decouple from parent environment
-        os.chdir("/") 
+        # Stay in the current directory to preserve relative paths
         os.setsid() 
-        os.umask(0) 
+        os.umask(0)
     
         # do second fork
         try: 
@@ -185,10 +209,21 @@ class SkynetDaemon(Daemon):
     """SKYNET-SAFE running as a daemon process."""
     
     def __init__(self, pidfile, config, logfile=None):
-        super().__init__(pidfile)
+        # Get log directory from environment if available
+        log_dir = os.getenv("LOG_DIR", "/var/log/skynet-safe")
+        
+        # Set default logfile if not provided
+        self.logfile = logfile if logfile else os.path.join(log_dir, "skynet.log")
+        
+        # Initialize daemon
+        if sys.stdout.isatty() and os.isatty(sys.stdout.fileno()):
+            # If running in a terminal, use standard output for logs
+            super().__init__(pidfile, stdin='/dev/null', stdout=sys.stdout.name, stderr=sys.stderr.name)
+        else:
+            # Otherwise use default redirections
+            super().__init__(pidfile)
+            
         self.config = config
-        self.logfile = logfile if logfile else "/var/log/skynet-safe/skynet.log"
-        os.makedirs(os.path.dirname(self.logfile), exist_ok=True)
         self.logger = setup_logging(self.logfile)
     
     def run(self):
@@ -249,22 +284,37 @@ class SkynetDaemon(Daemon):
 def main():
     """Main function to handle daemon operations."""
     parser = argparse.ArgumentParser(description='SKYNET-SAFE Daemon')
-    parser.add_argument('action', choices=['start', 'stop', 'restart', 'status'],
-                      help='Action to perform with the daemon')
-    parser.add_argument('--pidfile', default='/tmp/skynet-safe/skynet.pid',
+    parser.add_argument('action', choices=['start', 'stop', 'restart', 'status', 'foreground'],
+                      help='Action to perform with the daemon. Use "foreground" to run without daemonizing (for debugging)')
+    
+    # Get the default log directory from environment variable or use default
+    log_dir = os.getenv("LOG_DIR", "/var/log/skynet-safe")
+    default_pid_dir = os.path.join(log_dir, "run")
+    
+    parser.add_argument('--pidfile', default=os.path.join(default_pid_dir, 'skynet.pid'),
                       help='Path to the PID file')
-    parser.add_argument('--logfile', default='/var/log/skynet-safe/skynet.log',
+    parser.add_argument('--logfile', default=os.path.join(log_dir, 'skynet.log'),
                       help='Path to the log file')
     parser.add_argument('--platform', default='console',
                       help='Communication platform (console, signal, telegram)')
+    parser.add_argument('--web', action='store_true',
+                      help='Start the web interface alongside the daemon')
+    # Load default port from config
+    from src.config import config
+    default_web_port = config.WEB_INTERFACE.get("port", 7860)
+    
+    parser.add_argument('--web-port', type=int, default=default_web_port,
+                      help=f'Port for the web interface (default: {default_web_port})')
     
     args = parser.parse_args()
     
-    # Create pidfile directory if it doesn't exist
+    # Create directories if they don't exist
     os.makedirs(os.path.dirname(args.pidfile), exist_ok=True)
+    os.makedirs(os.path.dirname(args.logfile), exist_ok=True)
     
     # Setup configuration
     system_config = {
+        "SYSTEM_SETTINGS": config.SYSTEM_SETTINGS,
         "MODEL": config.MODEL,
         "MEMORY": config.MEMORY,
         "COMMUNICATION": {
@@ -301,22 +351,195 @@ def main():
             system_config["COMMUNICATION"]["telegram_polling_timeout"] = config.COMMUNICATION["telegram_polling_timeout"]
         if "telegram_chat_state_file" in config.COMMUNICATION:
             system_config["COMMUNICATION"]["telegram_chat_state_file"] = config.COMMUNICATION["telegram_chat_state_file"]
+        if "telegram_test_chat_id" in config.COMMUNICATION:
+            system_config["COMMUNICATION"]["telegram_test_chat_id"] = config.COMMUNICATION["telegram_test_chat_id"]
     
     # Create daemon instance
     daemon = SkynetDaemon(args.pidfile, system_config, args.logfile)
     
+    # Define function to start web interface
+    def start_web_interface(port=5000):
+        """Start the web interface in a separate process."""
+        web_pidfile = os.path.join(os.path.dirname(args.pidfile), 'skynet-web.pid')
+        
+        # Check if web interface is already running
+        if os.path.exists(web_pidfile):
+            try:
+                with open(web_pidfile, 'r') as f:
+                    web_pid = int(f.read().strip())
+                try:
+                    os.kill(web_pid, 0)  # Check if process exists
+                    print(f"Web interface already running on port {port} with PID {web_pid}")
+                    return web_pid
+                except OSError:
+                    # Process not running, remove stale PID file
+                    os.remove(web_pidfile)
+            except (IOError, ValueError):
+                # Invalid PID file, remove it
+                if os.path.exists(web_pidfile):
+                    os.remove(web_pidfile)
+        
+        # Use the run_monitor.py script to start the web interface
+        monitor_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'run_monitor.py')
+        
+        # Set environment variable for web port
+        env = os.environ.copy()
+        env['WEB_PORT'] = str(port)
+        
+        # Get host from config
+        host = config.WEB_INTERFACE.get("host", "0.0.0.0")
+        host = os.getenv("WEB_HOST", host)
+        
+        # Start web interface in a new process
+        print(f"Starting web interface on {host}:{port}...")
+        
+        # Set environment variables for web interface
+        env['WEB_PORT'] = str(port)
+        env['WEB_HOST'] = host
+        
+        if args.action == 'foreground':
+            # For foreground mode, use a separate process group
+            web_process = subprocess.Popen([sys.executable, monitor_script],
+                                          env=env,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE,
+                                          preexec_fn=os.setsid)
+        else:
+            # For daemon mode, detach completely
+            web_process = subprocess.Popen([sys.executable, monitor_script],
+                                         env=env,
+                                         stdout=subprocess.DEVNULL,
+                                         stderr=subprocess.DEVNULL,
+                                         preexec_fn=os.setsid)
+        
+        # Write PID to file
+        with open(web_pidfile, 'w') as f:
+            f.write(f"{web_process.pid}\n")
+        
+        print(f"Web interface started with PID {web_process.pid}")
+        
+        # Get machine's IP address
+        import socket
+        def get_ip_address():
+            try:
+                # Create a socket connection to an external server
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                # Doesn't need to be reachable
+                s.connect(('10.255.255.255', 1))
+                ip = s.getsockname()[0]
+                s.close()
+                return ip
+            except Exception:
+                return '127.0.0.1'
+        
+        ip_address = get_ip_address()
+        
+        print(f"Access locally at: http://localhost:{port}")
+        print(f"Access from network at: http://{ip_address}:{port}")
+        return web_process.pid
+
     # Perform requested action
     if args.action == 'start':
         print(f"Starting SKYNET-SAFE daemon with {args.platform} platform...")
+        
+        # Start web interface if requested
+        if args.web:
+            start_web_interface(args.web_port)
+            
         daemon.start()
+        
     elif args.action == 'stop':
         print("Stopping SKYNET-SAFE daemon...")
+        
+        # Also stop web interface if it's running
+        web_pidfile = os.path.join(os.path.dirname(args.pidfile), 'skynet-web.pid')
+        if os.path.exists(web_pidfile):
+            try:
+                with open(web_pidfile, 'r') as f:
+                    web_pid = int(f.read().strip())
+                try:
+                    print(f"Stopping web interface (PID {web_pid})...")
+                    os.killpg(os.getpgid(web_pid), signal.SIGTERM)
+                    os.remove(web_pidfile)
+                except OSError as e:
+                    print(f"Error stopping web interface: {e}")
+            except (IOError, ValueError):
+                print("Could not read web interface PID file")
+                
         daemon.stop()
+        
     elif args.action == 'restart':
         print("Restarting SKYNET-SAFE daemon...")
+        
+        # Stop web interface if it's running
+        web_pidfile = os.path.join(os.path.dirname(args.pidfile), 'skynet-web.pid')
+        if os.path.exists(web_pidfile):
+            try:
+                with open(web_pidfile, 'r') as f:
+                    web_pid = int(f.read().strip())
+                try:
+                    print(f"Stopping web interface (PID {web_pid})...")
+                    os.killpg(os.getpgid(web_pid), signal.SIGTERM)
+                    os.remove(web_pidfile)
+                except OSError as e:
+                    print(f"Error stopping web interface: {e}")
+            except (IOError, ValueError):
+                print("Could not read web interface PID file")
+        
         daemon.restart()
+        
+        # Start web interface if requested
+        if args.web:
+            start_web_interface(args.web_port)
+            
     elif args.action == 'status':
-        daemon.status()
+        daemon_running = daemon.status()
+        
+        # Check web interface status
+        web_pidfile = os.path.join(os.path.dirname(args.pidfile), 'skynet-web.pid')
+        if os.path.exists(web_pidfile):
+            try:
+                with open(web_pidfile, 'r') as f:
+                    web_pid = int(f.read().strip())
+                try:
+                    os.kill(web_pid, 0)  # Check if process exists
+                    print(f"Web interface is running with PID {web_pid}")
+                except OSError:
+                    print("Web interface is not running (stale PID file)")
+            except (IOError, ValueError):
+                print("Could not read web interface PID file")
+        else:
+            print("Web interface is not running")
+            
+    elif args.action == 'foreground':
+        print(f"Starting SKYNET-SAFE in foreground mode with {args.platform} platform...")
+        
+        # Start web interface if requested
+        web_pid = None
+        if args.web:
+            web_pid = start_web_interface(args.web_port)
+            
+        # Write PID file without daemonizing
+        with open(daemon.pidfile, 'w+') as f:
+            f.write("%s\n" % os.getpid())
+        try:
+            daemon.run()
+        except KeyboardInterrupt:
+            print("\nShutting down SKYNET-SAFE...")
+            
+            # Also stop web interface if it was started
+            if args.web and web_pid:
+                try:
+                    print(f"Stopping web interface (PID {web_pid})...")
+                    os.killpg(os.getpgid(web_pid), signal.SIGTERM)
+                    web_pidfile = os.path.join(os.path.dirname(args.pidfile), 'skynet-web.pid')
+                    if os.path.exists(web_pidfile):
+                        os.remove(web_pidfile)
+                except OSError as e:
+                    print(f"Error stopping web interface: {e}")
+                    
+            if os.path.exists(daemon.pidfile):
+                os.remove(daemon.pidfile)
 
 
 if __name__ == "__main__":

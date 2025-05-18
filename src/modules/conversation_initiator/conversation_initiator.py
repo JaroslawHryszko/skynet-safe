@@ -134,11 +134,17 @@ class ConversationInitiator:
         message = self.generate_initiation_message(model_manager, topic)
         
         # Wysyłamy wiadomość do wszystkich odbiorców
+        success = False
         for recipient in recipients:
             logger.info(f"Inicjowanie konwersacji z {recipient} na temat: {topic}")
-            communication_interface.send_message(recipient, message)
+            # Wysyłamy wiadomość przez wszystkie dostępne kanały komunikacyjne
+            result = communication_interface.send_message(recipient, message)
+            if result:
+                success = True
         
-        # Zapisujemy czas inicjacji
-        self.initiated_conversations.append(datetime.now())
+        # Zapisujemy czas inicjacji tylko jeśli udało się wysłać wiadomość
+        if success:
+            self.initiated_conversations.append(datetime.now())
+            return True
         
-        return True
+        return False

@@ -1,4 +1,4 @@
-"""Moduł interfejsu komunikacyjnego."""
+"""Communication interface module."""
 
 import logging
 import time
@@ -10,73 +10,73 @@ logger = logging.getLogger(__name__)
 
 
 class CommunicationInterface:
-    """Klasa do zarządzania komunikacją z użytkownikami."""
+    """Class for managing communication with users."""
 
     def __init__(self, config: Dict[str, Any]):
-        """Inicjalizacja interfejsu komunikacyjnego.
+        """Initialization of the communication interface.
         
         Args:
-            config: Konfiguracja zawierająca platformę komunikacyjną, interwał sprawdzania, itp.
+            config: Configuration containing the communication platform, check interval, etc.
         """
         self.config = config
         self.platform = config["platform"]
         self.check_interval = config["check_interval"]
         self.response_delay = config.get("response_delay", 0.5)
         
-        logger.info(f"Inicjalizacja interfejsu komunikacyjnego dla platformy {self.platform}...")
+        logger.info(f"Initializing communication interface for platform {self.platform}...")
         
-        # Uzyskanie odpowiedniego handlera dla platformy
+        # Getting the appropriate handler for the platform
         try:
             self.handler = get_message_handler(self.platform, config)
-            logger.info(f"Interfejs komunikacyjny dla platformy {self.platform} zainicjalizowany pomyślnie")
+            logger.info(f"Communication interface for platform {self.platform} initialized successfully")
         except Exception as e:
-            logger.error(f"Błąd przy inicjalizacji interfejsu komunikacyjnego: {e}")
+            logger.error(f"Error initializing communication interface: {e}")
             raise
     
     def receive_messages(self) -> List[Dict[str, Any]]:
-        """Pobranie nowych wiadomości z platformy komunikacyjnej.
+        """Retrieving new messages from the communication platform.
         
         Returns:
-            Lista nowych wiadomości w formacie [{"sender": str, "content": str, "timestamp": int}]
+            List of new messages in the format [{"sender": str, "content": str, "timestamp": int}]
         """
         try:
             messages = self.handler.get_new_messages()
             if messages and len(messages) > 0:
-                logger.info(f"Odebrano {len(messages)} nowych wiadomości")
+                logger.info(f"Received {len(messages)} new messages")
             return messages
         except Exception as e:
-            logger.error(f"Błąd przy odbieraniu wiadomości: {e}")
+            logger.error(f"Error receiving messages: {e}")
             return []
     
     def send_message(self, recipient: str, content: str) -> bool:
-        """Wysłanie wiadomości do odbiorcy.
+        """Sending a message to a recipient.
         
         Args:
-            recipient: Identyfikator odbiorcy
-            content: Treść wiadomości
+            recipient: Recipient identifier
+            content: Message content
             
         Returns:
-            True, jeśli wysłanie się powiodło, False w przeciwnym wypadku
+            True if sending succeeded, False otherwise
         """
         try:
-            # Krótka przerwa przed odpowiedzią, aby symulować czas na myślenie
+            # Short pause before responding to simulate thinking time
             if self.response_delay > 0:
                 time.sleep(self.response_delay)
                 
             success = self.handler.send_message(recipient, content)
             if success:
-                logger.info(f"Wysłano wiadomość do {recipient}")
+                logger.info(f"Message sent to {recipient}")
             else:
-                logger.warning(f"Nie udało się wysłać wiadomości do {recipient}")
+                logger.warning(f"Failed to send message to {recipient}")
             return success
         except Exception as e:
-            logger.error(f"Błąd przy wysyłaniu wiadomości: {e}")
+            logger.error(f"Error sending message: {e}")
             return False
     
     def close(self) -> None:
-        """Zamknięcie połączenia i sprzątanie zasobów."""
+        """Closing the connection and cleaning up resources."""
         try:
             self.handler.close()
-            logger.info(f"Interfejs komunikacyjny dla platformy {self.platform} został zamknięty")
+            logger.info(f"Communication interface for platform {self.platform} has been closed")
         except Exception as e:
-            logger.error(f"Błąd przy zamykaniu interfejsu komunikacyjnego: {e}")
+            logger.error(f"Error closing communication interface: {e}")

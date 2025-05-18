@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKYNET-SAFE Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SKYNET-SAFE Activity Monitor</h1>
+            <p class="current-status">Current status: <span id="status-text">Checking...</span></p>
+        </header>
+
+        <main>
+            <section class="current-activity">
+                <h2>Current Activity</h2>
+                <div id="current-activity-content" class="activity-content">
+                    <p class="loading">Loading...</p>
+                </div>
+            </section>
+
+            <section class="recent-activities">
+                <h2>Recent Activities</h2>
+                <div id="recent-activities-list" class="activities-list">
+                    <p class="loading">Loading...</p>
+                </div>
+            </section>
+
+            <section class="interaction-details hidden" id="interaction-details">
+                <h2>Interaction Details</h2>
+                <div class="interaction-content">
+                    <div class="prompt-section">
+                        <h3>Prompt</h3>
+                        <pre id="prompt-content"></pre>
+                    </div>
+                    <div class="response-section">
+                        <h3>Response</h3>
+                        <pre id="response-content"></pre>
+                    </div>
+                </div>
+                <button id="close-details">Close</button>
+            </section>
+        </main>
+
+        <footer>
+            <p>SKYNET-SAFE Monitor &copy; 2025</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/monitor.js') }}"></script>
+</body>
+</html>

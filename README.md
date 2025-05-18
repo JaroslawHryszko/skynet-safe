@@ -18,19 +18,11 @@ The system consists of the following main modules:
 7. **Persona Module** - provides a consistent character and communication style
 8. **Meta-awareness Module** - develops reflection and self-improvement capabilities
 
-## System Requirements
-
-- Python 3.8+
-- PyTorch 2.0+
-- Two NVIDIA P40 cards (or equivalent)
-- 32 GB RAM
-- Stable internet connection
-
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/example/skynet-safe.git
+git clone https://github.com/JaroslawHryszko/skynet-safe.git
 cd skynet-safe
 ```
 
@@ -187,10 +179,3 @@ Detailed project documentation can be found in the following files:
 - [DIAGRAM_WORKFLOW.md](DIAGRAM_WORKFLOW.md) - System workflow diagrams
 - [METAWARENESS_COMPONENTS.md](METAWARENESS_COMPONENTS.md) - Description of meta-awareness components
 
-## License
-
-This project is available under the MIT license.
-
-## Authors
-
-- SKYNET-SAFE Team

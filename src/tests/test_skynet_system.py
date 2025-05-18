@@ -11,6 +11,12 @@ from src.main import SkynetSystem
 def system_config():
     """Fixture z konfiguracją testową dla całego systemu."""
     return {
+        "SYSTEM_SETTINGS": {
+            "enable_security_system": True,
+            "enable_ethical_framework": True,
+            "enable_development_monitor": True,
+            "enable_external_validation": True
+        },
         "MODEL": {
             "base_model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
             "max_length": 100,

@@ -24,11 +24,22 @@ from src.modules.communication.handlers.console_handler import ConsoleHandler
 from src.modules.metawareness.external_evaluation_manager import ExternalEvaluationManager
 
 # Configure logger
+import os
+
+# Get log directory from .env or use default
+log_dir = os.getenv("LOG_DIR", "/opt/skynet-safe/logs")
+
+# Ensure log directory exists
+os.makedirs(log_dir, exist_ok=True)
+
+# Log to proper location in logs directory
+config_test_log_path = os.path.join(log_dir, "config_test.log")
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("config_test.log"),
+        logging.FileHandler(config_test_log_path),
         logging.StreamHandler()
     ]
 )
