@@ -79,6 +79,31 @@ def test_send_message(communication_config):
         mock_handler.send_message.assert_called_once_with(recipient, content)
 
 
+def test_send_message_with_diacritics(communication_config):
+    """Test wysyłania wiadomości z polskimi znakami diakrytycznymi."""
+    with patch("src.modules.communication.communication_interface.get_message_handler") as mock_get_handler:
+        # Przygotowanie mocka handlera
+        mock_handler = MagicMock()
+        mock_get_handler.return_value = mock_handler
+        
+        # Inicjalizacja interfejsu
+        interface = CommunicationInterface(communication_config)
+        
+        # Test wysyłania wiadomości z polskimi znakami
+        recipient = "user1"
+        content = "Wiadomość z polskimi znakami: ąęćńóśźż. Zażółć gęślą jaźń!"
+        interface.send_message(recipient, content)
+        
+        # Sprawdź, czy handler został wywołany z dokładnie takimi samymi znakami
+        mock_handler.send_message.assert_called_once_with(recipient, content)
+        
+        # Pobierz argumenty, z jakimi został wywołany mock
+        called_args = mock_handler.send_message.call_args[0]
+        assert called_args[1] == content
+        assert "ąęćńóśźż" in called_args[1]
+        assert "Zażółć gęślą jaźń" in called_args[1]
+
+
 def test_close_connection(communication_config):
     """Test zamykania połączenia."""
     with patch("src.modules.communication.communication_interface.get_message_handler") as mock_get_handler:

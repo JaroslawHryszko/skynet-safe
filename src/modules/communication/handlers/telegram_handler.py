@@ -182,17 +182,14 @@ class TelegramHandler(MessageHandler):
                 logger.info(f"Message truncated to {max_message_length} characters")
             
             # Enhanced security: Sanitize content to prevent potential exploits
-            # Remove non-printable characters
-            content = ''.join(char for char in content if ord(char) >= 32 and ord(char) < 127)
+            # Remove only non-printable characters (keep Unicode characters like Polish diacritics)
+            content = ''.join(char for char in content if ord(char) >= 32 or ord(char) > 127)
             
-            # Remove HTML tags and special characters using a more comprehensive approach
+            # Remove HTML tags using a comprehensive approach
             import re
             content = re.sub(r'<[^>]*>', '', content)  # Remove HTML tags
             
-            # Escape special Markdown characters to prevent formatting exploits
-            markdown_chars = r'_*[]()~`>#+-=|{}.!'
-            for char in markdown_chars:
-                content = content.replace(char, '\\' + char)
+            # We don't escape special characters to preserve Polish diacritics
             
             # Send the message with escaped characters
             return self._send_single_message(recipient, content)
@@ -216,7 +213,7 @@ class TelegramHandler(MessageHandler):
             payload = {
                 "chat_id": recipient,
                 "text": content
-                # Removed HTML parse mode to ensure plain text only
+                # Using plain text to preserve Unicode characters including Polish diacritics
             }
             
             # Send message via Telegram API

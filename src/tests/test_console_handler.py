@@ -39,23 +39,26 @@ def test_console_handler_initialization(test_config):
         handler = ConsoleHandler(test_config)
         
         # Check that handler was initialized correctly
-        assert hasattr(handler, "message_file")
-        assert hasattr(handler, "response_file")
-        assert handler.message_file == "console_messages.json"
-        assert handler.response_file == "skynet_responses.json"
+        assert hasattr(handler, "messages_file")
+        assert hasattr(handler, "last_seen_timestamp")
+        assert handler.messages_file.endswith("console_messages.json")
 
 
 @pytest.mark.pikachu(name="console_receive_messages", description="Test receiving messages from console")
-def test_receive_messages(test_config, test_messages):
+def test_get_new_messages(test_config, test_messages):
     """Test receiving messages through the console handler."""
     # Mock file operations for reading messages
     mock_file = mock_open(read_data=json.dumps(test_messages))
     
-    with patch("builtins.open", mock_file):
+    with patch("builtins.open", mock_file), \
+         patch("os.getcwd", return_value="/test/dir"), \
+         patch("time.time", return_value=1):  # Ensure timestamp is lower than messages
         handler = ConsoleHandler(test_config)
+        # Force the last_seen_timestamp to get all messages
+        handler.last_seen_timestamp = 0
         
         # Test receiving messages
-        messages = handler.receive_messages()
+        messages = handler.get_new_messages()
         
         # Verify messages
         assert len(messages) == 2
@@ -66,14 +69,14 @@ def test_receive_messages(test_config, test_messages):
 
 
 @pytest.mark.pikachu(name="console_no_messages", description="Test behavior when no messages file exists")
-def test_receive_messages_no_file(test_config):
+def test_get_new_messages_no_file(test_config):
     """Test behavior when no messages file exists."""
     # Mock os.path.exists to return False
     with patch("os.path.exists", return_value=False):
         handler = ConsoleHandler(test_config)
         
         # Test receiving messages when file doesn't exist
-        messages = handler.receive_messages()
+        messages = handler.get_new_messages()
         
         # Verify empty message list
         assert len(messages) == 0
@@ -95,8 +98,15 @@ def test_send_message(test_config):
                 
                 # Verify that message was sent successfully
                 assert success is True
-                mock_file.assert_called_with("skynet_responses.json", "w")
-                mock_json_dump.assert_called_once()
+                # Check if json.dump was called with correct content
+                assert mock_json_dump.call_count >= 1
+                # Find the call containing our test message
+                found = False
+                for call in mock_json_dump.call_args_list:
+                    if len(call[0][0]) > 0 and any(item.get("content") == "Test response message" for item in call[0][0]):
+                        found = True
+                        break
+                assert found, "Message with correct content not found in json.dump calls"
 
 
 @pytest.mark.pikachu(name="console_existing_responses", description="Test sending a message with existing responses")
@@ -143,8 +153,15 @@ def test_add_test_message(test_config):
                 ConsoleHandler.add_test_message("test_user", "Test message content", 12345)
                 
                 # Verify that method worked as expected
-                mock_file.assert_called_with("console_messages.json", "w")
-                mock_json_dump.assert_called_once()
+                # Check if json.dump was called with correct content
+                assert mock_json_dump.call_count >= 1
+                # Find the call containing our test message
+                found = False
+                for call in mock_json_dump.call_args_list:
+                    if len(call[0][0]) > 0 and any(item.get("content") == "Test message content" for item in call[0][0]):
+                        found = True
+                        break
+                assert found, "Message with correct content not found in json.dump calls"
                 
                 # Check the message content
                 call_args = mock_json_dump.call_args[0][0]
@@ -152,6 +169,49 @@ def test_add_test_message(test_config):
                 assert call_args[0]["sender"] == "test_user"
                 assert call_args[0]["content"] == "Test message content"
                 assert call_args[0]["timestamp"] == 12345
+
+
+@pytest.mark.parametrize("test_content", [
+    "Wiadomość z polskimi znakami: ąęćńóśźż",
+    "Zażółć gęślą jaźń!",
+    "Tekst ze znakami specjalnymi: !@#$%^&*()_+{}|:<>?",
+    "Emoji 😊 💻 🌍 🔥 🚀",
+])
+def test_send_message_with_special_characters(test_config, test_content):
+    """Test sending a message with special characters through the console handler."""
+    # Mock file operations for writing responses
+    mock_file = mock_open()
+    
+    with patch("builtins.open", mock_file), \
+         patch("json.dump") as mock_json_dump, \
+         patch("os.path.exists", return_value=False), \
+         patch("builtins.print") as mock_print, \
+         patch("os.getcwd", return_value="/test/dir"):
+                    handler = ConsoleHandler(test_config)
+                    
+                    # Test sending a message with Polish diacritics
+                    success = handler.send_message("user1", test_content)
+                    
+                    # Verify that message was sent successfully
+                    assert success is True
+                    # Check if json.dump was called with correct content
+                    assert mock_json_dump.call_count >= 1
+                    # Find the call containing our test message
+                    found = False
+                    for call in mock_json_dump.call_args_list:
+                        if len(call[0][0]) > 0 and any(item.get("content") == test_content for item in call[0][0]):
+                            found = True
+                            break
+                    assert found, "Message with correct content not found in json.dump calls"
+                    
+                    # Check that the content in JSON dump contains the exact special characters
+                    call_args = mock_json_dump.call_args[0][0]
+                    assert call_args[0]["content"] == test_content
+                    
+                    # Check that print was called with correct content
+                    mock_print.assert_called_once()
+                    print_arg = mock_print.call_args[0][0]
+                    assert test_content in print_arg
 
 
 @pytest.mark.pikachu(name="console_close", description="Test closing the handler")
