@@ -22,13 +22,13 @@ This document provides comprehensive, step-by-step instructions for installing a
 Ensure your target environment meets these minimum requirements:
 
 - **Hardware**:
-  - Server with two NVIDIA P40 GPUs or equivalent
+  - NVIDIA GPU with min. 8 GB VRAM
   - 32GB RAM
   - 100GB+ free disk space
   - Constant internet connection (minimum 100 Mbps)
 
 - **Software**:
-  - Ubuntu 22.04 LTS or similar Linux distribution
+  - Linux
   - NVIDIA driver version 535 or later
   - CUDA 12.1 or later
   - Python 3.10 or later
