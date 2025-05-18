@@ -2,7 +2,7 @@
 
 ## 1. What is SKYNET-SAFE?
 
-SKYNET-SAFE is an innovative artificial intelligence system designed to develop meta-awareness (the ability to reflect on its own thought processes).
+SKYNET-SAFE is a machine learning system designed to develop meta-awareness (the ability to reflect on its own thought processes).
 
 **S**elf **K**nowing **Y**et **N**ot **E**xistentially **T**hreatening - **S**ystem for **A**utonomous **F**riendly **E**volution
 
