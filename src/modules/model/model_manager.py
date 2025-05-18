@@ -225,12 +225,29 @@ class ModelManager:
         Returns:
             Complete prompt for the model
         """
+        # If context is empty but not None, it might be an empty list passed as context
         if not context:
-            #return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n<|user|>\n{query}\n<|assistant|>\n"
+            # If context is None or empty list, use basic prompt
             return f"{MODEL_PROMPT}\n\n{query}\n"
-
-        context_str = "\n".join(f"- {item}" for item in context)
-        return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\nContext:\n{context_str}\n<|user|>\n{query}\n<|assistant|>\n"
+            
+        # Check if the first context item is a persona context (added by PersonaManager)
+        # or a regular context item (memory, etc.)
+        if len(context) > 0 and isinstance(context[0], str) and context[0].strip().startswith("You are "):
+            # This is a persona context from PersonaManager
+            persona_context = context[0]
+            remaining_context = context[1:] if len(context) > 1 else []
+            
+            if remaining_context:
+                # We have both persona context and additional memory context
+                remaining_context_str = "\n".join(f"- {item}" for item in remaining_context)
+                return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{persona_context}\n\nContext:\n{remaining_context_str}\n<|user|>\n{query}\n<|assistant|>\n"
+            else:
+                # We only have persona context, no additional memory context
+                return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{persona_context}\n<|user|>\n{query}\n<|assistant|>\n"
+        else:
+            # This is regular context, not persona context
+            context_str = "\n".join(f"- {item}" for item in context)
+            return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\nContext:\n{context_str}\n<|user|>\n{query}\n<|assistant|>\n"
     
     def _extract_response(self, generated_text: str, prompt: str) -> str:
         """Extract response from the full generated text.

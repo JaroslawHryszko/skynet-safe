@@ -189,6 +189,7 @@ CONVERSATION_INITIATOR = {
 # Persona manager configuration (Phase 2)
 PERSONA = {
     "name": os.getenv("AI_NAME", "AI"),
+    "enable_persona_in_prompt": False,  # Flag controlling whether persona data should be included in the model prompt
     "traits": {
         "curiosity": 0.9,
         "friendliness": 0.85,

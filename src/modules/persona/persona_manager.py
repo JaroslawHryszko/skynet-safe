@@ -113,6 +113,13 @@ class PersonaManager:
         Returns:
             Text confirming persona initialization
         """
+        # Check if persona in prompt is enabled
+        enable_persona = self.config.get("enable_persona_in_prompt", False)
+        
+        if not enable_persona:
+            logger.info(f"Persona in prompt is disabled, skipping immersive initialization")
+            return "Persona initialization skipped (disabled in configuration)"
+            
         # Building deep immersive persona prompt
         persona_immersion_prompt = self._build_immersion_prompt()
         
@@ -235,8 +242,15 @@ class PersonaManager:
         """Gets the persona context for response generation.
         
         Returns:
-            String containing the persona context
+            String containing the persona context, or empty string if persona is disabled
         """
+        # Check if persona in prompt is enabled
+        enable_persona = self.config.get("enable_persona_in_prompt", False)
+        
+        if not enable_persona:
+            logger.info("Persona in prompt is disabled, returning empty context")
+            return ""
+            
         # Creating persona description based on traits and interests
         traits_desc = ", ".join([f"{trait}: {value}" for trait, value in self.traits.items()])
         interests_desc = ", ".join(self.interests)
@@ -267,10 +281,6 @@ class PersonaManager:
         return persona_context.strip()
 
     def apply_persona_to_response(self, model_manager: Any, query: str, original_response: str) -> str:
-    
-        if os.getenv("DISABLE_PERSONA_TRANSFORM", "false").lower() == "true":
-            return original_response
-    
         """Applies persona to the generated response.
         
         Args:
@@ -279,10 +289,22 @@ class PersonaManager:
             original_response: Generated response before persona adjustment
             
         Returns:
-            Response adjusted to the persona
+            Response adjusted to the persona, or original response if persona is disabled
         """
+        # Check if persona in prompt is enabled
+        enable_persona = self.config.get("enable_persona_in_prompt", False)
+        
+        # Also check environment variable for backward compatibility
+        if os.getenv("DISABLE_PERSONA_TRANSFORM", "false").lower() == "true" or not enable_persona:
+            logger.info("Persona transformation is disabled, returning original response")
+            return original_response
+        
         persona_context = self.get_persona_context()
         
+        # If persona context is empty (disabled), return original response
+        if not persona_context:
+            return original_response
+            
         # Extended prompt for better immersion
         prompt = f"""
         User query: {query}

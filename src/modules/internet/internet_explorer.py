@@ -1,4 +1,4 @@
-"""Moduł do eksploracji internetowej."""
+"""Module for internet exploration."""
 
 import logging
 from typing import Dict, List, Any, Optional
@@ -12,105 +12,105 @@ logger = logging.getLogger(__name__)
 
 
 class InternetExplorer:
-    """Klasa do eksploracji i pozyskiwania informacji z internetu."""
+    """Class for exploring and retrieving information from the internet."""
 
     def __init__(self, config: Dict[str, Any]):
-        """Inicjalizacja eksploratora internetowego.
+        """Initialization of internet explorer.
         
         Args:
-            config: Konfiguracja zawierająca parametry wyszukiwania, itp.
+            config: Configuration containing search parameters, etc.
         """
         self.config = config
         self.search_engine = config.get("search_engine", "duckduckgo")
         self.max_results = config.get("max_results", 5)
         self.timeout = config.get("timeout", 30)
         
-        logger.info(f"Inicjalizacja eksploratora internetowego (wyszukiwarka: {self.search_engine})...")
+        logger.info(f"Initializing internet explorer (search engine: {self.search_engine})...")
         
-        # Sesja HTTP dla wielokrotnych żądań
+        # HTTP session for multiple requests
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         })
         
-        logger.info("Eksplorator internetowy zainicjalizowany pomyślnie")
+        logger.info("Internet explorer initialized successfully")
     
     def search_information(self, query: str) -> List[Dict[str, Any]]:
-        """Wyszukiwanie informacji na podstawie zapytania.
+        """Search for information based on a query.
         
         Args:
-            query: Zapytanie wyszukiwania
+            query: Search query
             
         Returns:
-            Lista wyników wyszukiwania w formacie [{"title": str, "body": str, "href": str}]
+            List of search results in the format [{"title": str, "body": str, "href": str}]
         """
         try:
-            logger.info(f"Wyszukiwanie informacji na temat: {query}")
+            logger.info(f"Searching for information about: {query}")
             
             if self.search_engine == "duckduckgo":
                 return self._search_duckduckgo(query)
             else:
-                logger.warning(f"Nieobsługiwana wyszukiwarka: {self.search_engine}, używanie DuckDuckGo")
+                logger.warning(f"Unsupported search engine: {self.search_engine}, using DuckDuckGo")
                 return self._search_duckduckgo(query)
                 
         except Exception as e:
-            logger.error(f"Błąd przy wyszukiwaniu informacji: {e}")
+            logger.error(f"Error while searching for information: {e}")
             return []
     
     def fetch_content(self, url: str) -> Optional[str]:
-        """Pobieranie zawartości ze strony internetowej.
+        """Retrieve content from a web page.
         
         Args:
-            url: Adres URL strony do pobrania
+            url: URL of the page to retrieve
             
         Returns:
-            Zawartość strony jako tekst lub None w przypadku błędu
+            Page content as text or None in case of error
         """
         try:
-            logger.info(f"Pobieranie zawartości z: {url}")
+            logger.info(f"Retrieving content from: {url}")
             
-            # Pobieranie strony
+            # Get the page
             response = requests.get(url, timeout=self.timeout)
             
-            # Sprawdzenie statusu odpowiedzi
+            # Check response status
             if response.status_code == 200:
-                # Parsowanie HTML
+                # Parse HTML
                 soup = BeautifulSoup(response.text, "html.parser")
                 
-                # Ekstrakcja tekstu
+                # Extract text
                 content = soup.get_text(separator=" ", strip=True)
                 
-                # Skrócenie zawartości, jeśli jest zbyt długa (opcjonalnie)
+                # Truncate content if it's too long (optional)
                 if len(content) > 10000:
                     content = content[:10000] + "..."
                 
                 return content
             else:
-                logger.warning(f"Błąd HTTP {response.status_code} przy pobieraniu zawartości z {url}")
+                logger.warning(f"HTTP error {response.status_code} when retrieving content from {url}")
                 return None
                 
         except Exception as e:
-            logger.error(f"Błąd przy pobieraniu zawartości z {url}: {e}")
+            logger.error(f"Error retrieving content from {url}: {e}")
             return None
     
     def _search_duckduckgo(self, query: str) -> List[Dict[str, Any]]:
-        """Wyszukiwanie informacji za pomocą DuckDuckGo.
+        """Search for information using DuckDuckGo.
         
         Args:
-            query: Zapytanie wyszukiwania
+            query: Search query
             
         Returns:
-            Lista wyników wyszukiwania
+            List of search results
         """
         try:
-            # Inicjalizacja klienta DuckDuckGo
+            # Initialize DuckDuckGo client
             with DDGS() as ddgs:
-                # Wyszukiwanie tekstu
+                # Search for text
                 results = list(ddgs.text(query, max_results=self.max_results))
                 
-                logger.info(f"Znaleziono {len(results)} wyników dla zapytania: {query}")
+                logger.info(f"Found {len(results)} results for query: {query}")
                 return results
                 
         except Exception as e:
-            logger.error(f"Błąd przy wyszukiwaniu w DuckDuckGo: {e}")
+            logger.error(f"Error searching with DuckDuckGo: {e}")
             return []

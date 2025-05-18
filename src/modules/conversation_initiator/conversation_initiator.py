@@ -1,4 +1,4 @@
-"""Moduł inicjowania konwersacji z użytkownikiem."""
+"""Module for initiating conversations with users."""
 
 import random
 import logging
@@ -8,89 +8,89 @@ from typing import Dict, List, Any, Optional, Union
 logger = logging.getLogger("SKYNET-SAFE.ConversationInitiator")
 
 class ConversationInitiator:
-    """Klasa odpowiedzialna za inicjowanie konwersacji z użytkownikiem."""
+    """Class responsible for initiating conversations with users."""
 
     def __init__(self, config: Dict[str, Any]):
-        """Inicjalizacja inicjatora konwersacji z konfiguracją.
+        """Initialization of the conversation initiator with configuration.
         
         Args:
-            config: Konfiguracja inicjatora konwersacji zawierająca parametry takie jak
-                   min_time_between_initiations, init_probability, topics_of_interest, itp.
+            config: Configuration for the conversation initiator containing parameters such as
+                   min_time_between_initiations, init_probability, topics_of_interest, etc.
         """
         self.config = config
-        self.min_time_between_initiations = config.get("min_time_between_initiations", 3600)  # sekundy
+        self.min_time_between_initiations = config.get("min_time_between_initiations", 3600)  # seconds
         self.init_probability = config.get("init_probability", 0.3)
-        self.topics_of_interest = config.get("topics_of_interest", ["AI", "metaświadomość", "uczenie maszynowe"])
+        self.topics_of_interest = config.get("topics_of_interest", ["AI", "meta-awareness", "machine learning"])
         self.max_daily_initiations = config.get("max_daily_initiations", 5)
         
-        # Historia zainicjowanych konwersacji (timestampy)
+        # History of initiated conversations (timestamps)
         self.initiated_conversations = []
         
-        logger.info(f"Inicjator konwersacji zainicjalizowany z {self.init_probability=}, tematy: {self.topics_of_interest}")
+        logger.info(f"Conversation initiator initialized with {self.init_probability=}, topics: {self.topics_of_interest}")
 
     def should_initiate_conversation(self) -> bool:
-        """Sprawdza, czy należy zainicjować konwersację.
+        """Checks if a conversation should be initiated.
         
         Returns:
-            True, jeśli system powinien zainicjować konwersację, False w przeciwnym razie
+            True if the system should initiate a conversation, False otherwise
         """
-        # Losowy czynnik - prawdopodobieństwo inicjacji
+        # Random factor - initiation probability
         if random.random() > self.init_probability:
-            logger.debug("Prawdopodobieństwo inicjacji nie zostało osiągnięte")
+            logger.debug("Initiation probability threshold not reached")
             return False
         
-        # Sprawdzamy, czy minął minimalny czas od ostatniej inicjacji
+        # Check if the minimum time since last initiation has passed
         current_time = datetime.now()
         if self.initiated_conversations:
             last_initiation = max(self.initiated_conversations)
             time_since_last = (current_time - last_initiation).total_seconds()
             
             if time_since_last < self.min_time_between_initiations:
-                logger.debug(f"Za wcześnie na nową inicjację, minęło tylko {time_since_last} sekund")
+                logger.debug(f"Too early for a new initiation, only {time_since_last} seconds have passed")
                 return False
         
-        # Sprawdzamy, czy nie przekroczyliśmy limitu dziennych inicjacji
+        # Check if we haven't exceeded the daily initiation limit
         today = current_time.date()
         today_initiations = sum(1 for ts in self.initiated_conversations 
                                if ts.date() == today)
         
         if today_initiations >= self.max_daily_initiations:
-            logger.debug(f"Przekroczono limit dziennych inicjacji: {today_initiations}/{self.max_daily_initiations}")
+            logger.debug(f"Daily initiation limit exceeded: {today_initiations}/{self.max_daily_initiations}")
             return False
         
-        logger.info("Warunki do inicjacji konwersacji zostały spełnione")
+        logger.info("Conditions for conversation initiation have been met")
         return True
 
     def get_topic_for_initiation(self, discoveries: List[Dict[str, Any]]) -> Union[str, Dict[str, Any]]:
-        """Wybiera temat do inicjacji konwersacji.
+        """Selects a topic for conversation initiation.
         
         Args:
-            discoveries: Lista odkryć z modułu internetowego
+            discoveries: List of discoveries from the internet module
             
         Returns:
-            Temat konwersacji (string lub słownik z odkryciem)
+            Conversation topic (string or dictionary with discovery)
         """
         if discoveries:
-            # Jeśli mamy odkrycia, wybieramy losowo jedno z nich
-            logger.info(f"Wybór tematu z {len(discoveries)} dostępnych odkryć")
+            # If we have discoveries, randomly choose one of them
+            logger.info(f"Selecting topic from {len(discoveries)} available discoveries")
             return random.choice(discoveries)
         else:
-            # Jeśli nie mamy odkryć, wybieramy losowo jeden z tematów zainteresowań
-            logger.info("Brak odkryć, wybór tematu z predefiniowanych zainteresowań")
+            # If we don't have discoveries, randomly choose one of the topics of interest
+            logger.info("No discoveries, selecting topic from predefined interests")
             return random.choice(self.topics_of_interest)
 
     def generate_initiation_message(self, model_manager: Any, topic: Union[str, Dict[str, Any]]) -> str:
-        """Generuje wiadomość inicjującą konwersację.
+        """Generates a message to initiate conversation.
         
         Args:
-            model_manager: Instancja ModelManager do generowania odpowiedzi
-            topic: Temat konwersacji (string lub słownik z odkryciem)
+            model_manager: ModelManager instance for generating responses
+            topic: Conversation topic (string or dictionary with discovery)
             
         Returns:
-            Wygenerowana wiadomość inicjująca
+            Generated initiation message
         """
         if isinstance(topic, dict):
-            # Jeśli mamy pełne odkrycie, używamy jego treści
+            # If we have a full discovery, use its content
             topic_content = topic.get("content", "")
             topic_name = topic.get("topic", "")
             prompt = (
@@ -100,49 +100,49 @@ class ConversationInitiator:
                 f"Don't mention that you 'found information', but naturally refer to this topic."
             )
         else:
-            # Jeśli mamy tylko nazwę tematu
+            # If we only have a topic name
             prompt = (
                 f"I want to start an interesting conversation with a user about '{topic}'. "
                 f"Generate a short, natural opening message that will interest the user in this topic."
             )
         
-        logger.info(f"Generowanie wiadomości inicjującej dla tematu: {topic}")
+        logger.info(f"Generating initiation message for topic: {topic}")
         message = model_manager.generate_response(prompt, "")
         return message
 
     def initiate_conversation(self, model_manager: Any, communication_interface: Any, 
                               discoveries: List[Dict[str, Any]], recipients: List[str]) -> bool:
-        """Inicjuje konwersację z użytkownikami.
+        """Initiates conversation with users.
         
         Args:
-            model_manager: Instancja ModelManager do generowania odpowiedzi
-            communication_interface: Interfejs komunikacyjny do wysyłania wiadomości
-            discoveries: Lista odkryć z modułu internetowego
-            recipients: Lista identyfikatorów odbiorców
+            model_manager: ModelManager instance for generating responses
+            communication_interface: Communication interface for sending messages
+            discoveries: List of discoveries from the internet module
+            recipients: List of recipient identifiers
             
         Returns:
-            True, jeśli konwersacja została zainicjowana, False w przeciwnym razie
+            True if the conversation was initiated, False otherwise
         """
-        # Sprawdzamy, czy powinniśmy zainicjować konwersację
+        # Check if we should initiate a conversation
         if not self.should_initiate_conversation():
             return False
         
-        # Wybieramy temat
+        # Select a topic
         topic = self.get_topic_for_initiation(discoveries)
         
-        # Generujemy wiadomość
+        # Generate a message
         message = self.generate_initiation_message(model_manager, topic)
         
-        # Wysyłamy wiadomość do wszystkich odbiorców
+        # Send the message to all recipients
         success = False
         for recipient in recipients:
-            logger.info(f"Inicjowanie konwersacji z {recipient} na temat: {topic}")
-            # Wysyłamy wiadomość przez wszystkie dostępne kanały komunikacyjne
+            logger.info(f"Initiating conversation with {recipient} on topic: {topic}")
+            # Send the message through all available communication channels
             result = communication_interface.send_message(recipient, message)
             if result:
                 success = True
         
-        # Zapisujemy czas inicjacji tylko jeśli udało się wysłać wiadomość
+        # Record the initiation time only if the message was sent successfully
         if success:
             self.initiated_conversations.append(datetime.now())
             return True

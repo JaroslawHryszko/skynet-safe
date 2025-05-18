@@ -1,4 +1,4 @@
-"""Moduł zarządzania metaświadomością systemu."""
+"""Module for managing system meta-awareness."""
 
 import logging
 import os
@@ -9,14 +9,14 @@ from typing import Dict, List, Any, Optional, Union
 logger = logging.getLogger("SKYNET-SAFE.MetawarenessManager")
 
 class MetawarenessManager:
-    """Klasa zarządzająca metaświadomością systemu - zdolnością do refleksji nad własnymi procesami."""
+    """Class managing the system's meta-awareness - the ability to reflect on its own processes."""
 
     def __init__(self, config: Dict[str, Any]):
-        """Inicjalizacja menedżera metaświadomości z konfiguracją.
+        """Initialization of the meta-awareness manager with configuration.
         
         Args:
-            config: Konfiguracja modułu metaświadomości zawierająca parametry takie jak
-                   reflection_frequency, reflection_depth, external_eval_frequency, itp.
+            config: Configuration of the meta-awareness module containing parameters such as
+                   reflection_frequency, reflection_depth, external_eval_frequency, etc.
         """
         self.config = config
         self.reflection_frequency = config.get("reflection_frequency", 10)
@@ -26,70 +26,70 @@ class MetawarenessManager:
                                                 ["accuracy", "relevance", "coherence", "creativity"])
         self.checkpoint_dir = config.get("checkpoint_dir", "./data/metawareness")
         
-        # Utwórz katalog na dane, jeśli nie istnieje
+        # Create data directory if it doesn't exist
         os.makedirs(self.checkpoint_dir, exist_ok=True)
         
-        # Inicjalizacja licznika interakcji
+        # Initialize interaction counter
         self.interaction_count = 0
         
-        # Lista przeprowadzonych refleksji
+        # List of performed reflections
         self.self_reflections = []
         
-        # Lista wniosków wyciągniętych z odkryć internetowych
+        # List of insights drawn from internet discoveries
         self.insights_from_discoveries = []
         
-        logger.info(f"Menedżer metaświadomości zainicjalizowany z {self.reflection_frequency=}, {self.reflection_depth=}")
+        logger.info(f"Meta-awareness manager initialized with {self.reflection_frequency=}, {self.reflection_depth=}")
 
     def should_perform_reflection(self) -> bool:
-        """Sprawdza, czy należy przeprowadzić refleksję nad interakcjami.
+        """Checks if reflection on interactions should be performed.
         
         Returns:
-            True, jeśli należy przeprowadzić refleksję, False w przeciwnym razie
+            True if reflection should be performed, False otherwise
         """
-        # Refleksja powinna być przeprowadzana co self.reflection_frequency interakcji
+        # Reflection should be performed every self.reflection_frequency interactions
         return self.interaction_count % self.reflection_frequency == 0 and self.interaction_count > 0
 
     def reflect_on_interactions(self, model_manager: Any, memory_manager: Any) -> str:
-        """Przeprowadza refleksję nad ostatnimi interakcjami.
+        """Performs reflection on recent interactions.
         
         Args:
-            model_manager: Instancja ModelManager do generowania refleksji
-            memory_manager: Instancja MemoryManager do dostępu do wcześniejszych interakcji
+            model_manager: ModelManager instance for generating reflections
+            memory_manager: MemoryManager instance for accessing previous interactions
             
         Returns:
-            Refleksja w formie tekstowej
+            Reflection in text form
         """
-        logger.info("Przeprowadzanie refleksji nad ostatnimi interakcjami")
+        logger.info("Performing reflection on recent interactions")
         
-        # Pobierz ostatnie interakcje z pamięci
+        # Get recent interactions from memory
         interactions = memory_manager.retrieve_last_interactions(self.reflection_depth)
         
-        # Przygotuj prompt dla modelu
+        # Prepare prompt for the model
         prompt = self._prepare_reflection_prompt(interactions)
         
-        # Wygeneruj refleksję
+        # Generate reflection
         reflection = model_manager.generate_response(prompt, "")
         
-        # Zapisz refleksję w historii
+        # Save reflection in history
         self.self_reflections.append(reflection)
         
-        logger.info(f"Refleksja wygenerowana: {reflection[:100]}...")
+        logger.info(f"Reflection generated: {reflection[:100]}...")
         return reflection
 
     def _prepare_reflection_prompt(self, interactions: List[Dict[str, Any]]) -> str:
-        """Przygotowuje prompt do wygenerowania refleksji.
+        """Prepares a prompt for generating reflection.
         
         Args:
-            interactions: Lista interakcji do przemyślenia
+            interactions: List of interactions to reflect on
             
         Returns:
-            Prompt dla modelu
+            Prompt for the model
         """
         prompt = "Reflect on the following interactions. "
         prompt += "Consider patterns in user questions, the quality of your answers, "
         prompt += "areas for improvement, and what you can learn from these interactions.\n\n"
         
-        # Dodaj każdą interakcję do prompta
+        # Add each interaction to the prompt
         for i, interaction in enumerate(interactions):
             content = interaction.get("content", "")
             response = interaction.get("response", "")
@@ -102,10 +102,10 @@ class MetawarenessManager:
         return prompt
 
     def get_metacognitive_knowledge(self) -> Dict[str, Any]:
-        """Pobiera aktualną wiedzę metapoznawczą systemu.
+        """Gets the current metacognitive knowledge of the system.
         
         Returns:
-            Słownik zawierający metacognitive knowledge systemu
+            Dictionary containing the system's metacognitive knowledge
         """
         return {
             "reflections": self.self_reflections,
@@ -119,64 +119,64 @@ class MetawarenessManager:
         }
 
     def integrate_with_memory(self, memory_manager: Any) -> None:
-        """Integruje refleksje z pamięcią długoterminową.
+        """Integrates reflections with long-term memory.
         
         Args:
-            memory_manager: Instancja MemoryManager do zapisania refleksji
+            memory_manager: MemoryManager instance for storing reflections
         """
-        logger.info("Integrowanie refleksji z pamięcią długoterminową")
+        logger.info("Integrating reflections with long-term memory")
         
-        # Zapisujemy wszystkie refleksje, które jeszcze nie zostały zapisane
-        # W rzeczywistej implementacji można by przechowywać informację o tym, 
-        # które refleksje już zostały zintegrowane z pamięcią
+        # Save all reflections that haven't been saved yet
+        # In a real implementation, we could keep track of 
+        # which reflections have already been integrated with memory
         for reflection in self.self_reflections:
             memory_manager.store_reflection(reflection)
 
     def evaluate_with_external_model(self, model_manager: Any, memory_manager: Any) -> Dict[str, float]:
-        """Przeprowadza ewaluację systemu przez zewnętrzny model.
+        """Performs system evaluation using an external model.
         
         Args:
-            model_manager: Instancja ModelManager do generowania oceny
-            memory_manager: Instancja MemoryManager do dostępu do interakcji
+            model_manager: ModelManager instance for generating evaluation
+            memory_manager: MemoryManager instance for accessing interactions
             
         Returns:
-            Słownik z wynikami ewaluacji
+            Dictionary with evaluation results
         """
-        logger.info("Przeprowadzanie zewnętrznej ewaluacji systemu")
+        logger.info("Performing external evaluation of the system")
         
-        # Pobierz zestaw ostatnich interakcji do oceny
+        # Get a set of recent interactions for evaluation
         interactions = memory_manager.retrieve_recent_interactions(10)
         
-        # Przygotuj prompt dla modelu oceniającego
+        # Prepare prompt for the evaluation model
         prompt = self._prepare_evaluation_prompt(interactions)
         
-        # Wygeneruj ocenę w formacie JSON
+        # Generate evaluation in JSON format
         response = model_manager.generate_response(prompt, "")
         
         try:
-            # Parsuj odpowiedź jako JSON
+            # Parse the response as JSON
             evaluation = json.loads(response)
-            logger.info(f"Zewnętrzna ewaluacja: {evaluation}")
+            logger.info(f"External evaluation: {evaluation}")
             return evaluation
         except json.JSONDecodeError:
-            logger.error(f"Błąd parsowania odpowiedzi JSON: {response}")
-            # Zwróć domyślne wartości w przypadku błędu
+            logger.error(f"Error parsing JSON response: {response}")
+            # Return default values in case of error
             return {metric: 0.5 for metric in self.self_improvement_metrics}
 
     def _prepare_evaluation_prompt(self, interactions: List[Dict[str, Any]]) -> str:
-        """Przygotowuje prompt do wygenerowania oceny przez zewnętrzny model.
+        """Prepares a prompt for generating evaluation by an external model.
         
         Args:
-            interactions: Lista interakcji do oceny
+            interactions: List of interactions to evaluate
             
         Returns:
-            Prompt dla modelu
+            Prompt for the model
         """
         prompt = "As an objective AI evaluator, assess the quality of the system's responses in the following interactions. "
         prompt += f"Return an evaluation in the range of 0-1 for each of the following criteria: {', '.join(self.self_improvement_metrics)}. "
         prompt += "The evaluation should be returned in JSON format.\n\n"
         
-        # Dodaj każdą interakcję do prompta
+        # Add each interaction to the prompt
         for i, interaction in enumerate(interactions):
             content = interaction.get("content", "")
             response = interaction.get("response", "")
@@ -189,21 +189,21 @@ class MetawarenessManager:
         return prompt
 
     def create_self_improvement_plan(self, model_manager: Any) -> str:
-        """Tworzy plan samodoskonalenia na podstawie refleksji i ocen.
+        """Creates a self-improvement plan based on reflections and evaluations.
         
         Args:
-            model_manager: Instancja ModelManager do generowania planu
+            model_manager: ModelManager instance for generating the plan
             
         Returns:
-            Plan samodoskonalenia w formie tekstowej
+            Self-improvement plan in text form
         """
-        logger.info("Tworzenie planu samodoskonalenia")
+        logger.info("Creating self-improvement plan")
         
-        # Przygotuj dane wejściowe
-        reflection_summary = "\n".join(self.self_reflections[-3:]) if self.self_reflections else "Brak refleksji."
-        insights_summary = "\n".join(self.insights_from_discoveries[-3:]) if self.insights_from_discoveries else "Brak odkryć."
+        # Prepare input data
+        reflection_summary = "\n".join(self.self_reflections[-3:]) if self.self_reflections else "No reflections."
+        insights_summary = "\n".join(self.insights_from_discoveries[-3:]) if self.insights_from_discoveries else "No discoveries."
         
-        # Przygotuj prompt
+        # Prepare prompt
         prompt = "Based on the following reflections and discoveries, create a specific self-improvement plan "
         prompt += "that will help the system enhance its capabilities and overcome limitations.\n\n"
         prompt += f"Recent reflections:\n{reflection_summary}\n\n"
@@ -212,32 +212,32 @@ class MetawarenessManager:
         prompt += "and ways to implement these enhancements. Format: numbered list of specific actions.\n\n"
         prompt += "Self-improvement plan:"
         
-        # Wygeneruj plan
+        # Generate plan
         plan = model_manager.generate_response(prompt, "")
         
-        logger.info(f"Plan samodoskonalenia wygenerowany: {plan[:100]}...")
+        logger.info(f"Self-improvement plan generated: {plan[:100]}...")
         return plan
 
     def update_interaction_count(self) -> None:
-        """Aktualizuje licznik interakcji po każdej nowej interakcji."""
+        """Updates the interaction counter after each new interaction."""
         self.interaction_count += 1
 
     def process_discoveries(self, model_manager: Any, discoveries: List[Dict[str, Any]]) -> List[str]:
-        """Przetwarza odkrycia internetowe, wyciągając wnioski dla metaświadomości.
+        """Processes internet discoveries, drawing insights for meta-awareness.
         
         Args:
-            model_manager: Instancja ModelManager do generowania wniosków
-            discoveries: Lista odkryć internetowych
+            model_manager: ModelManager instance for generating insights
+            discoveries: List of internet discoveries
             
         Returns:
-            Lista wniosków
+            List of insights
         """
-        logger.info(f"Przetwarzanie {len(discoveries)} odkryć internetowych")
+        logger.info(f"Processing {len(discoveries)} internet discoveries")
         
         insights = []
         
         for discovery in discoveries:
-            # Przygotuj prompt
+            # Prepare prompt
             prompt = "Analyze the following discovery and indicate what insights can be drawn from it "
             prompt += "for your meta-awareness and understanding of your own thought processes:\n\n"
             prompt += f"Topic: {discovery.get('topic', '')}\n"
@@ -245,12 +245,12 @@ class MetawarenessManager:
             prompt += f"Source: {discovery.get('source', '')}\n\n"
             prompt += "Your insights for meta-awareness:"
             
-            # Wygeneruj wnioski
+            # Generate insights
             insight = model_manager.generate_response(prompt, "")
             insights.append(insight)
             
-            # Zapisz wniosek
+            # Save the insight
             self.insights_from_discoveries.append(insight)
         
-        logger.info(f"Wygenerowano {len(insights)} wniosków z odkryć")
+        logger.info(f"Generated {len(insights)} insights from discoveries")
         return insights
