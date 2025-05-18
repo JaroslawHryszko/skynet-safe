@@ -2,12 +2,13 @@
 
 ## Introduction
 
-SKYNET-SAFE offers two complementary approaches for 24/7 operation:
+SKYNET-SAFE offers several complementary approaches for 24/7 operation:
 
-1. **Daemon Mode**: Built-in functionality to run the system as a background process
-2. **System Service**: Integration with systemd for enhanced reliability on servers
+1. **Universal Script**: The simplest approach using the `run.sh` script
+2. **Daemon Mode**: Built-in functionality to run the system as a background process
+3. **System Service**: Integration with systemd for enhanced reliability on servers
 
-Both options achieve the same goal of running the system continuously, but they serve different use cases based on your environment and requirements.
+All options achieve the same goal of running the system continuously, but they serve different use cases based on your environment and requirements.
 
 ## Daemon Mode
 
@@ -20,7 +21,25 @@ The built-in daemon mode uses the UNIX "double-fork" pattern to create a detache
 
 ## Launch methods
 
-### Basic launch
+### Recommended: Using the Universal Script
+
+The simplest way to run the system as a daemon is using the universal script:
+
+```bash
+# Launch the system as a daemon (uses console platform by default)
+./run.sh daemon
+
+# To stop the daemon
+./run.sh stop
+
+# To check daemon status
+./run.sh status
+
+# To restart the daemon
+./run.sh restart
+```
+
+### Alternative: Direct daemon command
 
 ```bash
 # Launch the system as a daemon (uses console platform by default)

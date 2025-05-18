@@ -124,6 +124,9 @@ class SkynetSystem:
         # Load test cases
         self._load_test_cases()
         
+        # Initialize periodic tasks control variable
+        self.initial_cycle_skipped = False
+        
         logger.info("SKYNET-SAFE system initialized successfully.")
 
     def run(self):
@@ -675,6 +678,5 @@ if __name__ == "__main__":
         "EXTERNAL_VALIDATION": config.EXTERNAL_VALIDATION
     }
     
-    self.initial_cycle_skipped = False
     skynet = SkynetSystem(system_config)
     skynet.run()

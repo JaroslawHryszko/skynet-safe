@@ -58,27 +58,45 @@ python src/scripts/download_embeddings.py
 
 ## System Startup
 
-### Standard Startup
+### Recommended Method: Using the Universal Script
+
+The simplest way to run the system is using the provided universal script:
+
+```bash
+# Make the script executable (if not already)
+chmod +x run.sh
+
+# Run the system in various modes:
+./run.sh daemon      # Run as daemon (background)
+./run.sh interactive # Run in interactive mode
+./run.sh module      # Run main module directly
+./run.sh stop        # Stop running daemon
+./run.sh status      # Check daemon status
+./run.sh restart     # Restart daemon
+./run.sh help        # Display help information
+```
+
+### Alternative: Module Mode
 
 ```bash
 # Activate environment
 source venv/bin/activate
 
-# Run system in standard mode
-python src/main.py
+# Run system as a Python module
+python -m src.main
 
-# Run system with specific configuration
-python src/main.py --config configs/custom_config.py
+# Run system with specific configuration (using environment variable)
+CONFIG_PATH=configs/custom_config.py python -m src.main
 ```
 
 ### Debug Mode Startup
 
 ```bash
 # Run with extended logging
-python src/main.py --debug
+DEBUG=1 python -m src.main
 
 # Run without internet access (for testing only)
-python src/main.py --no-internet
+NO_INTERNET=1 python -m src.main
 ```
 
 ### Running as a System Service
@@ -96,7 +114,7 @@ sudo systemctl start skynet-safe.service
 sudo systemctl status skynet-safe.service
 ```
 
-### Running in Daemon Mode
+### Advanced: Running in Daemon Mode Directly
 
 The SKYNET-SAFE system can run as a daemon (background process) without configuring a system service:
 

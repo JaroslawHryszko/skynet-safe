@@ -95,27 +95,47 @@ COMMUNICATION = {
 
 ## Running the System
 
-### Standard Mode
+### Recommended Method Using Universal Script
+
+The easiest way to run the system is using the provided universal script:
 
 ```bash
-python src/main.py
+# Make the script executable (if not already)
+chmod +x run.sh
+
+# Run the system in various modes:
+./run.sh daemon      # Run as daemon (background)
+./run.sh interactive # Run in interactive mode
+./run.sh module      # Run main module directly
+./run.sh stop        # Stop running daemon
+./run.sh status      # Check daemon status
+./run.sh restart     # Restart daemon
+./run.sh help        # Display help information
 ```
 
-### Interactive Mode
+### Alternative Methods
+
+If needed, you can also use these alternative methods to run the system:
+
+#### Module Mode
+
+```bash
+python -m src.main
+```
+
+#### Interactive Mode
 
 ```bash
 python run_interactive.py
 ```
 
-### Test Mode
+#### Test Mode
 
 ```bash
 python run_test.py
 ```
 
-### 24/7 Operation Mode
-
-The system can be run 24/7 using the built-in daemon functionality. The daemon uses the Unix double-fork pattern to run as a background process that continues running after you close the terminal.
+#### Daemon Mode
 
 ```bash
 # Run the system as a background daemon
@@ -132,7 +152,9 @@ python run_daemon.py stop
 python run_daemon.py status
 ```
 
-Alternatively, you can use the included systemd service file for production environments:
+#### Production Deployment with systemd
+
+For long-term production deployments, you can use the included systemd service file:
 
 ```bash
 # Install the service
@@ -144,7 +166,7 @@ sudo systemctl enable skynet-safe.service
 sudo systemctl start skynet-safe.service
 ```
 
-For detailed information on 24/7 operation, see [DAEMON_OPERATION.md](DAEMON_OPERATION.md).
+For detailed information on 24/7 operation, see [DAEMON_OPERATION.md](docs/DAEMON_OPERATION.md).
 
 ## Implementation Stages
 
@@ -174,13 +196,20 @@ pytest src/tests/
 ## Documentation
 
 Detailed project documentation can be found in the following files:
-- [DOCUMENTATION.md](DOCUMENTATION.md) - Technical project documentation
-- [DOCUMENTATION_USER.md](DOCUMENTATION_USER.md) - Complete user documentation
-- [MODEL_REQUIREMENTS.md](MODEL_REQUIREMENTS.md) - Language model specifications and requirements
-- [PERSONA_IMMERSION.md](PERSONA_IMMERSION.md) - Documentation of the model immersion system
-- [DAEMON_OPERATION.md](DAEMON_OPERATION.md) - Documentation of 24/7 operation methods
-- [DIAGRAM_WORKFLOW.md](DIAGRAM_WORKFLOW.md) - System workflow diagrams
-- [METAWARENESS_COMPONENTS.md](METAWARENESS_COMPONENTS.md) - Description of meta-awareness components
+- [DOCUMENTATION.md](docs/DOCUMENTATION.md) - Technical project documentation
+- [DOCUMENTATION_USER.md](docs/DOCUMENTATION_USER.md) - Complete user documentation
+- [MODEL_REQUIREMENTS.md](docs/MODEL_REQUIREMENTS.md) - Language model specifications and requirements
+- [PERSONA_IMMERSION.md](docs/PERSONA_IMMERSION.md) - Documentation of the model immersion system
+- [DAEMON_OPERATION.md](docs/DAEMON_OPERATION.md) - Documentation of 24/7 operation methods
+- [DIAGRAM_WORKFLOW.md](docs/DIAGRAM_WORKFLOW.md) - System workflow diagrams
+- [METAWARENESS_COMPONENTS.md](docs/METAWARENESS_COMPONENTS.md) - Description of meta-awareness components
+
+Additional documentation:
+- [CONFIGURATION_TESTING.md](docs/CONFIGURATION_TESTING.md) - Information about testing configurations
+- [INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md) - Detailed installation instructions
+- [MEMORY_SYSTEM.md](docs/MEMORY_SYSTEM.md) - Memory system documentation
+- [SECURITY_CONTROLS.md](docs/SECURITY_CONTROLS.md) - Security controls documentation
+- [USAGE.md](docs/USAGE.md) - Usage instructions
 
 ## License
 
