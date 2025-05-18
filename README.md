@@ -53,25 +53,12 @@ signal-cli -u +1PHONENUMBER verify VERIFICATIONCODE
 
 # Obtain device ID (needed for configuration)
 signal-cli -u +1PHONENUMBER listDevices
-```
 
-### Option B: Telegram Configuration
-```bash
-# Create a Telegram bot through @BotFather
-# 1. Open Telegram and search for @BotFather
-# 2. Start a conversation and send the command /newbot
-# 3. Follow the instructions to create a new bot
-# 4. After creating the bot, you will receive an API token in the format:
-#    123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ
-# 5. Save this token to the configuration
-```
-
-5. Modify the configuration file:
-```bash
-# Open the configuration file
+# Modify the configuration file:
+cp /src/config/config.example.py /src/config/config.py
 nano src/config/config.py
 
-# For Signal communication, change the COMMUNICATION section to:
+# For Signal communication, change the COMMUNICATION section in config.py to:
 COMMUNICATION = {
     "platform": "signal",
     "check_interval": 10,
@@ -80,7 +67,23 @@ COMMUNICATION = {
     "signal_config_path": "/home/USER/.local/share/signal-cli/data"  # Adjust path
 }
 
-# For Telegram communication, change the COMMUNICATION section to:
+```
+
+### Option B: Telegram Configuration
+Create a Telegram bot through @BotFather:
+1. Open Telegram and search for @BotFather
+2. Start a conversation and send the command /newbot
+3. Follow the instructions to create a new bot
+4. After creating the bot, you will receive an API token in the format:
+```123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ```
+5. Save this token to the configuration
+6. Modify the configuration file:
+```bash
+# Open the configuration file
+cp /src/config/config.example.py /src/config/config.py
+nano src/config/config.py
+
+# Change the COMMUNICATION section to:
 COMMUNICATION = {
     "platform": "telegram",
     "check_interval": 10,
@@ -143,15 +146,15 @@ sudo systemctl start skynet-safe.service
 
 For detailed information on 24/7 operation, see [DAEMON_OPERATION.md](DAEMON_OPERATION.md).
 
-## Implementation Status
+## Implementation Stages
 
-### All Development Stages Completed:
+Modules already implemented are marked with ✅:
 
 - ✅ Model initialization infrastructure
 - ✅ Communication interfaces (Console, Signal, Telegram)
 - ✅ Long-term memory system implementation
 - ✅ Internet information retrieval system
-- ✅ Learning mechanisms and model adaptation
+- Learning mechanisms and model adaptation (line 162 in file learning_manager.py is commented)
 - ✅ Advanced internet exploration system
 - ✅ Conversation initiation based on discoveries
 - ✅ Adaptive persona with deep immersion
@@ -179,3 +182,4 @@ Detailed project documentation can be found in the following files:
 - [DIAGRAM_WORKFLOW.md](DIAGRAM_WORKFLOW.md) - System workflow diagrams
 - [METAWARENESS_COMPONENTS.md](METAWARENESS_COMPONENTS.md) - Description of meta-awareness components
 
+## Documentation
