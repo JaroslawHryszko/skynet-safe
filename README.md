@@ -30,7 +30,7 @@ The system consists of the following main modules:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/example/skynet-safe.git
+git clone https://github.com/JaroslawHryszko/skynet-safe.git
 cd skynet-safe
 ```
 
@@ -187,10 +187,3 @@ Detailed project documentation can be found in the following files:
 - [DIAGRAM_WORKFLOW.md](DIAGRAM_WORKFLOW.md) - System workflow diagrams
 - [METAWARENESS_COMPONENTS.md](METAWARENESS_COMPONENTS.md) - Description of meta-awareness components
 
-## License
-
-This project is available under the MIT license.
-
-## Authors
-
-- SKYNET-SAFE Team
