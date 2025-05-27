@@ -109,14 +109,22 @@ class CommunicationInterface:
         Returns:
             Default recipient identifier or None if not configured
         """
-        platform_config = self.config.get(self.platform, {})
-        
         if self.platform == "console":
             return "user"  # Console always sends to user
         elif self.platform == "telegram":
-            return platform_config.get("chat_id")
+            # Try different config keys for Telegram chat ID
+            chat_id = (self.config.get("telegram_test_chat_id") or 
+                      self.config.get("telegram_chat_id") or
+                      self.config.get("chat_id"))
+            if not chat_id:
+                logger.warning("No Telegram chat ID configured for system messages")
+            return chat_id
         elif self.platform == "signal":
-            return platform_config.get("phone_number")
+            phone = (self.config.get("signal_phone_number") or 
+                    self.config.get("phone_number"))
+            if not phone:
+                logger.warning("No Signal phone number configured for system messages")
+            return phone
         else:
             logger.warning(f"Unknown platform for system messages: {self.platform}")
             return None

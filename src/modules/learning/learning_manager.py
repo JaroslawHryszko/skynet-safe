@@ -27,6 +27,7 @@ class LearningManager:
         self.batch_size = config.get("batch_size", 4)
         self.epochs = config.get("epochs", 1)
         self.checkpoint_dir = config.get("checkpoint_dir", "./data/checkpoints")
+        self.max_sequence_length = config.get("max_sequence_length", 512)
         self.evaluation_interval = config.get("evaluation_interval", 10)
         
         # Creating a directory for checkpoints if it doesn't exist
@@ -121,7 +122,7 @@ class LearningManager:
             for query, response in training_data:
                 formatted_text = f"{query}\n{response}"
                 try:
-                    tokenized = tokenizer(formatted_text, truncation=True, padding="max_length", max_length=512)
+                    tokenized = tokenizer(formatted_text, truncation=True, padding="max_length", max_length=self.max_sequence_length)
                     formatted_data.append(tokenized)
                 except Exception as e:
                     logger.warning(f"Error tokenizing sample: {e}")

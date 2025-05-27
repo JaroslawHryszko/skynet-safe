@@ -120,13 +120,15 @@ class ConversationInitiator:
         # Directly use the tokenizer and model to get clean output - bypass persona system entirely
         input_ids = model_manager.tokenizer.encode(formatted_prompt, return_tensors="pt").to(model_manager.model.device)
         
-        # Generate response with appropriate parameters
+        # Generate response with same parameters as model_manager from config
         gen_kwargs = {
-            "temperature": 0.7,
-            "do_sample": True,
-            "max_new_tokens": 50,  # Short message
+            "temperature": model_manager.config.get('temperature', 0.7),
+            "do_sample": model_manager.config.get('do_sample', True),
+            "max_new_tokens": model_manager.config.get('max_new_tokens', 150),
+            "min_length": model_manager.config.get('min_length', 10),
             "pad_token_id": model_manager.tokenizer.eos_token_id,
-            "repetition_penalty": 1.1
+            "repetition_penalty": model_manager.config.get('repetition_penalty', 1.2),
+            "no_repeat_ngram_size": model_manager.config.get('no_repeat_ngram_size', 3)
         }
         
         import torch

@@ -169,18 +169,18 @@ class ModelManager:
         
         # Generate response
         try:
-            # Set a generation config that doesn't cause infinite loops
+            # Set a generation config using parameters from config
             gen_kwargs = {
-                "temperature": self.config.get('temperature', 0.5),
+                "temperature": self.config.get('temperature', 0.7),
                 "do_sample": self.config.get('do_sample', True),
                 "num_return_sequences": 1,
                 "pad_token_id": self.tokenizer.eos_token_id,
-                # Add these parameters to prevent infinite loops
-                "max_new_tokens": self.config.get('max_new_tokens', 512),  # Limit new tokens
-                "min_length": self.config.get('min_length', 2),        # Ensure some output
-                "repetition_penalty": 1.15,  # Penalize repetition
+                # All parameters from config with sensible defaults
+                "max_new_tokens": self.config.get('max_new_tokens', 150),
+                "min_length": self.config.get('min_length', 10),
+                "repetition_penalty": self.config.get('repetition_penalty', 1.2),
                 "stop": None,
-                "no_repeat_ngram_size": 3  # Prevent repeating 3-grams
+                "no_repeat_ngram_size": self.config.get('no_repeat_ngram_size', 3)
             }
             
             with torch.no_grad():
