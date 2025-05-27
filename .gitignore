@@ -58,7 +58,7 @@ runs/
 *.ckpt
 *.bin
 
-# Model directories (files can be large)
+# Model directories
 models/
 
 # Cache files

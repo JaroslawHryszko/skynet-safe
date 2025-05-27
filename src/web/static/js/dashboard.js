@@ -1,0 +1,268 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM element references
+    const statusDot = document.getElementById('status-dot');
+    const systemStatus = document.getElementById('system-status');
+    const lastUpdate = document.getElementById('last-update');
+    const footerTimestamp = document.getElementById('footer-timestamp');
+    
+    // Current Activity elements
+    const activityIcon = document.getElementById('activity-icon');
+    const currentActivityText = document.getElementById('current-activity-text');
+    const activityDescription = document.getElementById('activity-description');
+    
+    // Persona elements
+    const personaName = document.getElementById('persona-name');
+    const selfAwarenessBar = document.getElementById('self-awareness-bar');
+    const selfAwarenessText = document.getElementById('self-awareness-text');
+    const identityStrengthBar = document.getElementById('identity-strength-bar');
+    const identityStrengthText = document.getElementById('identity-strength-text');
+    const metacognitionBar = document.getElementById('metacognition-bar');
+    const metacognitionText = document.getElementById('metacognition-text');
+    const interestsCount = document.getElementById('interests-count');
+    const interactionsCount = document.getElementById('interactions-count');
+    
+    // Other elements
+    const traitsList = document.getElementById('traits-list');
+    const issuesList = document.getElementById('issues-list');
+    const activitiesTimeline = document.getElementById('activities-timeline');
+    const aiName = document.getElementById('ai-name');
+    const uptime = document.getElementById('uptime');
+    const completedTasks = document.getElementById('completed-tasks');
+    
+    // Activity icons mapping
+    const activityIcons = {
+        'Idle': '😴',
+        'Periodic Tasks': '⚡',
+        'Internet Exploration': '🌐',
+        'Initiating Conversation': '💬',
+        'Persona Update': '🧠',
+        'Self-Reflection': '🤔',
+        'External Evaluation': '📊',
+        'Processing Messages': '📨',
+        'Unknown': '❓'
+    };
+    
+    // Activity descriptions
+    const activityDescriptions = {
+        'Idle': 'System is waiting for input or tasks',
+        'Periodic Tasks': 'Running scheduled system maintenance',
+        'Internet Exploration': 'Searching for new information online',
+        'Initiating Conversation': 'Starting conversation with users',
+        'Persona Update': 'Updating personality and traits',
+        'Self-Reflection': 'Analyzing recent interactions',
+        'External Evaluation': 'Running external quality assessment',
+        'Processing Messages': 'Handling incoming user messages',
+        'Unknown': 'Activity status unclear'
+    };
+
+    // Initialize dashboard
+    refreshDashboard();
+    
+    // Auto-refresh every 5 seconds
+    setInterval(refreshDashboard, 5000);
+    
+    function refreshDashboard() {
+        fetch('/api/dashboard')
+            .then(response => response.json())
+            .then(data => {
+                updateSystemStatus(data.system);
+                updatePersonaState(data.persona);
+                updatePersonalityTraits(data.persona.traits);
+                updateSystemIssues(data.issues);
+                updateRecentActivities(data.recent_activities);
+                updateTimestamp();
+            })
+            .catch(error => {
+                console.error('Error fetching dashboard data:', error);
+                showConnectionError();
+            });
+    }
+    
+    function updateSystemStatus(systemData) {
+        // Update status indicator
+        if (systemData.status === 'active') {
+            statusDot.className = 'status-dot active';
+            systemStatus.textContent = 'Active';
+        } else {
+            statusDot.className = 'status-dot idle';
+            systemStatus.textContent = 'Idle';
+        }
+        
+        // Update current activity
+        const activity = systemData.current_activity;
+        activityIcon.textContent = activityIcons[activity] || activityIcons['Unknown'];
+        currentActivityText.textContent = activity;
+        activityDescription.textContent = activityDescriptions[activity] || activityDescriptions['Unknown'];
+        
+        // Update AI name, uptime, and completed tasks
+        aiName.textContent = systemData.ai_name;
+        if (uptime && systemData.uptime) {
+            uptime.textContent = systemData.uptime;
+        }
+        if (completedTasks && systemData.completed_tasks !== undefined) {
+            completedTasks.textContent = systemData.completed_tasks;
+        }
+    }
+    
+    function updatePersonaState(personaData) {
+        personaName.textContent = personaData.name;
+        
+        // Update progress bars - show absolute values for model metrics
+        if (personaData.show_absolute_values) {
+            updateAbsoluteValueBar(selfAwarenessBar, selfAwarenessText, personaData.self_awareness);
+            updateAbsoluteValueBar(identityStrengthBar, identityStrengthText, personaData.identity_strength);
+            updateAbsoluteValueBar(metacognitionBar, metacognitionText, personaData.metacognition);
+        } else {
+            updateProgressBar(selfAwarenessBar, selfAwarenessText, personaData.self_awareness);
+            updateProgressBar(identityStrengthBar, identityStrengthText, personaData.identity_strength);
+            updateProgressBar(metacognitionBar, metacognitionText, personaData.metacognition);
+        }
+        
+        // Update stats
+        interestsCount.textContent = personaData.interests_count;
+        interactionsCount.textContent = personaData.interactions_count;
+    }
+    
+    function updateProgressBar(barElement, textElement, value, rawValue = null) {
+        const percentage = Math.round(value * 100);
+        barElement.style.width = percentage + '%';
+        
+        // Show both percentage and raw value if available
+        if (rawValue !== null && rawValue !== value) {
+            textElement.textContent = `${percentage}% (${rawValue.toFixed(2)})`;
+        } else {
+            textElement.textContent = percentage + '%';
+        }
+        
+        // Color coding based on value
+        if (percentage >= 80) {
+            barElement.className = 'progress-fill high';
+        } else if (percentage >= 50) {
+            barElement.className = 'progress-fill medium';
+        } else {
+            barElement.className = 'progress-fill low';
+        }
+    }
+    
+    function updateAbsoluteValueBar(barElement, textElement, value) {
+        // For absolute values, show the raw number without percentage conversion
+        const displayValue = typeof value === 'number' ? value.toFixed(2) : value;
+        textElement.textContent = displayValue;
+        
+        // For visual bar, normalize to a reasonable scale (0-10 range)
+        const normalizedPercentage = Math.min(Math.max((value / 10) * 100, 0), 100);
+        barElement.style.width = normalizedPercentage + '%';
+        
+        // Color coding based on absolute value ranges
+        if (value >= 7) {
+            barElement.className = 'progress-fill high';
+        } else if (value >= 4) {
+            barElement.className = 'progress-fill medium';
+        } else {
+            barElement.className = 'progress-fill low';
+        }
+    }
+    
+    function updatePersonalityTraits(traits) {
+        if (!traits || Object.keys(traits).length === 0) {
+            traitsList.innerHTML = '<div class="loading">No traits data available</div>';
+            return;
+        }
+        
+        let traitsHTML = '';
+        Object.entries(traits).forEach(([trait, value]) => {
+            // Show absolute values for personality traits
+            const displayValue = typeof value === 'number' ? value.toFixed(2) : value;
+            
+            // For visual bar, normalize to 0-10 scale for display
+            const normalizedPercentage = Math.min(Math.max((value / 10) * 100, 0), 100);
+            const level = value >= 7 ? 'high' : value >= 4 ? 'medium' : 'low';
+            
+            traitsHTML += `
+                <div class="trait-item">
+                    <div class="trait-name">${trait.charAt(0).toUpperCase() + trait.slice(1)}</div>
+                    <div class="trait-bar">
+                        <div class="trait-fill ${level}" style="width: ${normalizedPercentage}%"></div>
+                        <span class="trait-value">${displayValue}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        traitsList.innerHTML = traitsHTML;
+    }
+    
+    function updateSystemIssues(issues) {
+        if (!issues || issues.length === 0) {
+            issuesList.innerHTML = '<div class="no-issues">✅ No issues detected</div>';
+            return;
+        }
+        
+        let issuesHTML = '';
+        issues.forEach(issue => {
+            const iconMap = {
+                'error': '❌',
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            };
+            
+            issuesHTML += `
+                <div class="issue-item ${issue.type}">
+                    <span class="issue-icon">${iconMap[issue.type] || 'ℹ️'}</span>
+                    <div class="issue-content">
+                        <div class="issue-message">${issue.message}</div>
+                        <div class="issue-time">${formatTime(issue.timestamp)}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        issuesList.innerHTML = issuesHTML;
+    }
+    
+    function updateRecentActivities(activities) {
+        if (!activities || activities.length === 0) {
+            activitiesTimeline.innerHTML = '<div class="loading">No recent activities</div>';
+            return;
+        }
+        
+        let activitiesHTML = '';
+        activities.forEach(activity => {
+            // Use time_display if available, otherwise format timestamp
+            const timeDisplay = activity.time_display || formatTime(activity.timestamp);
+            
+            activitiesHTML += `
+                <div class="timeline-item">
+                    <div class="timeline-time">${timeDisplay}</div>
+                    <div class="timeline-content">${activity.activity}</div>
+                </div>
+            `;
+        });
+        
+        activitiesTimeline.innerHTML = activitiesHTML;
+    }
+    
+    function updateTimestamp() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        lastUpdate.textContent = timeString;
+        footerTimestamp.textContent = timeString;
+    }
+    
+    function formatTime(timestamp) {
+        try {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString();
+        } catch (e) {
+            return timestamp;
+        }
+    }
+    
+    function showConnectionError() {
+        statusDot.className = 'status-dot error';
+        systemStatus.textContent = 'Connection Error';
+        currentActivityText.textContent = 'Cannot connect to system';
+        activityDescription.textContent = 'Please check if SKYNET-SAFE is running';
+        activityIcon.textContent = '⚠️';
+    }
+});

@@ -73,6 +73,54 @@ class CommunicationInterface:
             logger.error(f"Error sending message: {e}")
             return False
     
+    def send_system_message(self, content: str, message_type: str = "INFO") -> bool:
+        """Sends system message to the configured platform.
+        
+        Args:
+            content: System message content
+            message_type: Type of message (INFO, WARNING, ERROR, CRITICAL)
+            
+        Returns:
+            True if sending succeeded, False otherwise
+        """
+        try:
+            # Format system message with type indicator
+            formatted_message = f"🤖 [{message_type}] {content}"
+            
+            # Get default recipient based on platform
+            default_recipient = self._get_default_recipient()
+            if not default_recipient:
+                logger.warning("No default recipient configured for system messages")
+                return False
+            
+            success = self.handler.send_message(default_recipient, formatted_message)
+            if success:
+                logger.info(f"System message ({message_type}) sent successfully")
+            else:
+                logger.warning(f"Failed to send system message ({message_type})")
+            return success
+        except Exception as e:
+            logger.error(f"Error sending system message: {e}")
+            return False
+    
+    def _get_default_recipient(self) -> Optional[str]:
+        """Get default recipient for system messages based on platform.
+        
+        Returns:
+            Default recipient identifier or None if not configured
+        """
+        platform_config = self.config.get(self.platform, {})
+        
+        if self.platform == "console":
+            return "user"  # Console always sends to user
+        elif self.platform == "telegram":
+            return platform_config.get("chat_id")
+        elif self.platform == "signal":
+            return platform_config.get("phone_number")
+        else:
+            logger.warning(f"Unknown platform for system messages: {self.platform}")
+            return None
+    
     def close(self) -> None:
         """Closing the connection and cleaning up resources."""
         try:

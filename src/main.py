@@ -58,9 +58,23 @@ class SkynetSystem:
         logger.info("Initializing SKYNET-SAFE system...")
         
         # Initialize core modules (Phase 1)
-        self.model = model_manager.ModelManager(config["MODEL"])
-        self.memory = memory_manager.MemoryManager(config["MEMORY"])
-        self.communication = communication_interface.CommunicationInterface(config["COMMUNICATION"])
+        try:
+            self.model = model_manager.ModelManager(config["MODEL"])
+            self.memory = memory_manager.MemoryManager(config["MEMORY"])
+            self.communication = communication_interface.CommunicationInterface(config["COMMUNICATION"])
+            
+            # Send system notification about model loading
+            self.communication.send_system_message("Model załadowany pomyślnie! System gotowy do pracy.", "INFO")
+            
+        except Exception as e:
+            # If model loading fails, still initialize communication to notify about the error
+            try:
+                self.communication = communication_interface.CommunicationInterface(config["COMMUNICATION"])
+                self.communication.send_system_message(f"Błąd ładowania modelu: {str(e)}", "CRITICAL")
+            except:
+                pass
+            raise
+        
         self.internet = internet_explorer.InternetExplorer(config["INTERNET"])
         
         # Initialize extended modules (Phase 2)
@@ -164,9 +178,11 @@ class SkynetSystem:
                 
         except KeyboardInterrupt:
             logger.info("Stopping SKYNET-SAFE system...")
+            self.communication.send_system_message("System zatrzymywany przez użytkownika.", "WARNING")
             self._cleanup()
         except Exception as e:
             logger.error(f"Error in main system loop: {e}")
+            self.communication.send_system_message(f"Krytyczny błąd systemu: {str(e)}", "CRITICAL")
             self._cleanup()
             raise
 
@@ -210,18 +226,30 @@ class SkynetSystem:
         # Extract context from memory
         context = self.memory.retrieve_relevant_context(sanitized_content)
         
+        # Add persona context to system prompt (not as response transformation)
+        persona_context = self.persona.get_persona_context()
+        if persona_context:
+            # Insert persona context at the beginning of context list
+            if isinstance(context, list):
+                context.insert(0, persona_context)
+            else:
+                context = [persona_context] + ([context] if context else [])
+        
         # Add metacognitive context
         metacognitive_context = self._get_metacognitive_context()
         if metacognitive_context:
-            context += "\n\nMetacognitive context:\n" + metacognitive_context
+            if isinstance(context, list):
+                context.append("\n\nMetacognitive context:\n" + metacognitive_context)
+            else:
+                context += "\n\nMetacognitive context:\n" + metacognitive_context
         
-        # Generate base response using the model
-        basic_response = self.model.generate_response(sanitized_content, context)
+        # Generate response using the model with persona in system prompt
+        personalized_response = self.model.generate_response(sanitized_content, context)
         
-        # Apply persona to the response
-        personalized_response = self.persona.apply_persona_to_response(
-            self.model, sanitized_content, basic_response
-        )
+        # Check if model has critical errors to report
+        if hasattr(self.model, '_last_critical_error'):
+            self.communication.send_system_message(self.model._last_critical_error, "CRITICAL")
+            delattr(self.model, '_last_critical_error')
         
         # Check and correct response ethically if ethical framework enabled
         ethical_result = {"was_modified": False, "evaluation": {"ethical_score": 1.0}}

@@ -140,7 +140,7 @@ class Daemon:
 
     def stop(self):
         """
-        Stop the daemon
+        Stop the daemon with enhanced safety checks
         """
         # Get the pid from the pidfile
         try:
@@ -154,19 +154,139 @@ class Daemon:
             sys.stderr.write(message % self.pidfile)
             return # not an error in a restart
 
-        # Try killing the daemon process    
+        # Enhanced stopping procedure with multiple attempts and verification
+        print(f"Stopping daemon process {pid}...")
+        
+        # First attempt: SIGTERM (graceful shutdown)
         try:
-            while True:
-                os.kill(pid, signal.SIGTERM)
-                time.sleep(0.1)
-        except OSError as err:
-            err = str(err)
-            if err.find("No such process") > 0:
-                if os.path.exists(self.pidfile):
-                    os.remove(self.pidfile)
+            os.kill(pid, signal.SIGTERM)
+            print("Sent SIGTERM, waiting for graceful shutdown...")
+            
+            # Wait up to 10 seconds for graceful shutdown
+            for i in range(50):  # 50 * 0.2 = 10 seconds
+                try:
+                    os.kill(pid, 0)  # Check if process still exists
+                    time.sleep(0.2)
+                except OSError:
+                    # Process has terminated
+                    print("Process terminated gracefully")
+                    break
             else:
-                print(str(err))
+                # Process still running after 10 seconds
+                print("Graceful shutdown timeout, forcing termination...")
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                    print("Sent SIGKILL")
+                    
+                    # Wait up to 5 seconds for force kill
+                    for i in range(25):  # 25 * 0.2 = 5 seconds
+                        try:
+                            os.kill(pid, 0)
+                            time.sleep(0.2)
+                        except OSError:
+                            print("Process force-terminated")
+                            break
+                    else:
+                        print("WARNING: Process may still be running after force kill")
+                        
+                except OSError as e:
+                    if "No such process" not in str(e):
+                        print(f"Error during force kill: {e}")
+                        
+        except OSError as err:
+            err_str = str(err)
+            if "No such process" in err_str:
+                print("Process was already terminated")
+            else:
+                print(f"Error stopping process: {err_str}")
                 sys.exit(1)
+        
+        # Additional cleanup: check for child processes
+        self._cleanup_child_processes(pid)
+        
+        # Clean up PID file
+        if os.path.exists(self.pidfile):
+            os.remove(self.pidfile)
+            print("Removed PID file")
+        
+        # Verify complete shutdown
+        self._verify_shutdown(pid)
+        print("Daemon stopped successfully")
+
+    def _cleanup_child_processes(self, parent_pid):
+        """Clean up any child processes that might still be running"""
+        try:
+            # Use ps to find child processes
+            result = subprocess.run(['ps', '--ppid', str(parent_pid), '-o', 'pid', '--no-headers'], 
+                                  capture_output=True, text=True, timeout=5)
+            
+            if result.returncode == 0 and result.stdout.strip():
+                child_pids = [int(pid.strip()) for pid in result.stdout.strip().split('\n') if pid.strip()]
+                
+                if child_pids:
+                    print(f"Found {len(child_pids)} child processes, terminating...")
+                    for child_pid in child_pids:
+                        try:
+                            os.kill(child_pid, signal.SIGTERM)
+                            time.sleep(0.5)
+                            # Check if still running, then force kill
+                            try:
+                                os.kill(child_pid, 0)
+                                os.kill(child_pid, signal.SIGKILL)
+                                print(f"Force-killed child process {child_pid}")
+                            except OSError:
+                                print(f"Child process {child_pid} terminated")
+                        except OSError:
+                            pass  # Process already terminated
+                            
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            # ps command failed or timed out, try alternative method
+            try:
+                # Use pgrep to find processes with skynet in name
+                result = subprocess.run(['pgrep', '-f', 'skynet'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0 and result.stdout.strip():
+                    pids = [int(pid.strip()) for pid in result.stdout.strip().split('\n') if pid.strip()]
+                    for pid in pids:
+                        if pid != parent_pid and pid != os.getpid():
+                            try:
+                                print(f"Terminating related process {pid}")
+                                os.kill(pid, signal.SIGTERM)
+                                time.sleep(0.5)
+                                try:
+                                    os.kill(pid, 0)
+                                    os.kill(pid, signal.SIGKILL)
+                                except OSError:
+                                    pass
+                            except OSError:
+                                pass
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+                print("Could not check for child processes")
+
+    def _verify_shutdown(self, pid):
+        """Verify that the daemon and related processes are completely stopped"""
+        # Check main process
+        try:
+            os.kill(pid, 0)
+            print(f"WARNING: Main process {pid} is still running!")
+            return False
+        except OSError:
+            pass  # Process is stopped, which is expected
+        
+        # Check for any remaining skynet processes
+        try:
+            result = subprocess.run(['pgrep', '-f', 'skynet'], 
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0 and result.stdout.strip():
+                remaining_pids = [int(pid.strip()) for pid in result.stdout.strip().split('\n') 
+                                if pid.strip() and int(pid.strip()) != os.getpid()]
+                if remaining_pids:
+                    print(f"WARNING: Found {len(remaining_pids)} remaining skynet processes: {remaining_pids}")
+                    return False
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            pass  # pgrep not available or failed
+        
+        return True
 
     def restart(self):
         """
@@ -217,8 +337,16 @@ class SkynetDaemon(Daemon):
         
         # Initialize daemon
         if sys.stdout.isatty() and os.isatty(sys.stdout.fileno()):
-            # If running in a terminal, use standard output for logs
-            super().__init__(pidfile, stdin='/dev/null', stdout=sys.stdout.name, stderr=sys.stderr.name)
+            # If running in a terminal, use log file for output
+            log_dir = os.path.dirname(self.logfile)
+            if not log_dir:
+                # Fallback to skynet-safe/logs/ directory
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                log_dir = os.path.join(script_dir, 'logs')
+                os.makedirs(log_dir, exist_ok=True)
+            super().__init__(pidfile, stdin='/dev/null', 
+                           stdout=os.path.join(log_dir, 'stdout.log'), 
+                           stderr=os.path.join(log_dir, 'stderr.log'))
         else:
             # Otherwise use default redirections
             super().__init__(pidfile)
@@ -451,7 +579,7 @@ def main():
     elif args.action == 'stop':
         print("Stopping SKYNET-SAFE daemon...")
         
-        # Also stop web interface if it's running
+        # Enhanced web interface stopping
         web_pidfile = os.path.join(os.path.dirname(args.pidfile), 'skynet-web.pid')
         if os.path.exists(web_pidfile):
             try:
@@ -459,14 +587,59 @@ def main():
                     web_pid = int(f.read().strip())
                 try:
                     print(f"Stopping web interface (PID {web_pid})...")
+                    # Try graceful shutdown first
                     os.killpg(os.getpgid(web_pid), signal.SIGTERM)
-                    os.remove(web_pidfile)
+                    
+                    # Wait for graceful shutdown
+                    for i in range(30):  # 30 * 0.2 = 6 seconds
+                        try:
+                            os.kill(web_pid, 0)
+                            time.sleep(0.2)
+                        except OSError:
+                            print("Web interface terminated gracefully")
+                            break
+                    else:
+                        # Force kill if still running
+                        try:
+                            print("Force-killing web interface...")
+                            os.killpg(os.getpgid(web_pid), signal.SIGKILL)
+                        except OSError:
+                            pass
+                    
+                    # Clean up PID file
+                    if os.path.exists(web_pidfile):
+                        os.remove(web_pidfile)
+                        
                 except OSError as e:
                     print(f"Error stopping web interface: {e}")
+                    # Try to remove PID file anyway
+                    if os.path.exists(web_pidfile):
+                        os.remove(web_pidfile)
             except (IOError, ValueError):
                 print("Could not read web interface PID file")
+                # Try to remove invalid PID file
+                if os.path.exists(web_pidfile):
+                    os.remove(web_pidfile)
                 
         daemon.stop()
+        
+        # Final verification that all processes are stopped
+        print("Verifying complete shutdown...")
+        try:
+            result = subprocess.run(['pgrep', '-f', 'skynet'], 
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0 and result.stdout.strip():
+                remaining_pids = [int(pid.strip()) for pid in result.stdout.strip().split('\n') 
+                                if pid.strip() and int(pid.strip()) != os.getpid()]
+                if remaining_pids:
+                    print(f"WARNING: Found {len(remaining_pids)} remaining processes: {remaining_pids}")
+                    print("You may need to manually kill these processes")
+                else:
+                    print("All processes stopped successfully")
+            else:
+                print("All processes stopped successfully")
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            print("Could not verify process shutdown (pgrep not available)")
         
     elif args.action == 'restart':
         print("Restarting SKYNET-SAFE daemon...")

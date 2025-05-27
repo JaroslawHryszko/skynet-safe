@@ -291,11 +291,11 @@ class PersonaManager:
         Returns:
             Response adjusted to the persona, or original response if persona is disabled
         """
-        # Check if persona in prompt is enabled
-        enable_persona = self.config.get("enable_persona_in_prompt", False)
+        # Check if persona transformation is enabled
+        enable_persona_transform = self.config.get("enable_persona_transformation", False)
         
         # Also check environment variable for backward compatibility
-        if os.getenv("DISABLE_PERSONA_TRANSFORM", "false").lower() == "true" or not enable_persona:
+        if os.getenv("DISABLE_PERSONA_TRANSFORM", "false").lower() == "true" or not enable_persona_transform:
             logger.info("Persona transformation is disabled, returning original response")
             return original_response
         

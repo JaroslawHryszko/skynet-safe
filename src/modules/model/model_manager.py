@@ -96,23 +96,28 @@ class ModelManager:
                 tokenizer_kwargs["use_local_files_only"] = True
             
             logger.info(f"Loading model {config['base_model']}...")
+            logger.info("Model loading in progress... This may take several minutes for large models.")
             
             # Use try/except to handle various possible errors
             try:
                 # First try with all parameters
+                logger.info("Loading model weights...")
                 self.model = AutoModelForCausalLM.from_pretrained(
                     config['base_model'],
                     **model_kwargs,
                     **pretrained_kwargs
                 )
+                logger.info("Model weights loaded successfully")
             except TypeError as e:
                 if "got an unexpected keyword argument 'use_local_files_only'" in str(e):
                     logger.warning("Model does not support 'use_local_files_only' parameter, trying without it")
                     # Try again without use_local_files_only
+                    logger.info("Loading model weights...")
                     self.model = AutoModelForCausalLM.from_pretrained(
                         config['base_model'],
                         **model_kwargs
                     )
+                    logger.info("Model weights loaded successfully")
                 else:
                     raise
             
@@ -121,15 +126,22 @@ class ModelManager:
                 config['base_model'],
                 **tokenizer_kwargs
             )
+            logger.info("Tokenizer loaded successfully")
             
             # Make sure the tokenizer has pad_token
             if self.tokenizer.pad_token is None:
                 logger.warning("Tokenizer doesn't have a pad token, setting it to eos_token")
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             
-            logger.info(f"Model {config['base_model']} loaded successfully")
+            logger.info(f"🎉 Model {config['base_model']} loaded successfully! System ready to receive messages.")
         except Exception as e:
             logger.error(f"Error loading model: {e}")
+            # Try to send error notification if communication interface is available
+            try:
+                # This will be called from main.py which has access to communication
+                self._model_loading_error = str(e)
+            except:
+                pass
             raise
     
     def generate_response(self, query: str, context: List[str] = None) -> str:
@@ -159,12 +171,12 @@ class ModelManager:
         try:
             # Set a generation config that doesn't cause infinite loops
             gen_kwargs = {
-                "temperature": self.config.get('temperature', 0.3),
+                "temperature": self.config.get('temperature', 0.5),
                 "do_sample": self.config.get('do_sample', True),
                 "num_return_sequences": 1,
                 "pad_token_id": self.tokenizer.eos_token_id,
                 # Add these parameters to prevent infinite loops
-                "max_new_tokens": self.config.get('max_new_tokens', 28),  # Limit new tokens
+                "max_new_tokens": self.config.get('max_new_tokens', 512),  # Limit new tokens
                 "min_length": self.config.get('min_length', 2),        # Ensure some output
                 "repetition_penalty": 1.15,  # Penalize repetition
                 "stop": None,
@@ -213,6 +225,9 @@ class ModelManager:
             }
             llm_logger.error(json.dumps(error_log))
             
+            # Store critical error for potential communication
+            self._last_critical_error = f"Błąd generowania odpowiedzi: {str(e)}"
+            
             return "I'm sorry, there was a technical problem generating the response."
     
     def _prepare_prompt(self, query: str, context: Optional[List[str]]) -> str:
@@ -232,7 +247,11 @@ class ModelManager:
             
         # Check if the first context item is a persona context (added by PersonaManager)
         # or a regular context item (memory, etc.)
-        if len(context) > 0 and isinstance(context[0], str) and context[0].strip().startswith("You are "):
+        context_starts_with_persona = (
+            len(context) > 0 and isinstance(context[0], str) and 
+            (context[0].strip().startswith("You are ") or context[0].strip().startswith("Jesteś "))
+        )
+        if context_starts_with_persona:
             # This is a persona context from PersonaManager
             persona_context = context[0]
             remaining_context = context[1:] if len(context) > 1 else []

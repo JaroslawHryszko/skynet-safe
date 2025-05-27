@@ -93,22 +93,60 @@ class ConversationInitiator:
             # If we have a full discovery, use its content
             topic_content = topic.get("content", "")
             topic_name = topic.get("topic", "")
-            prompt = (
-                f"I want to start an interesting conversation with a user about '{topic_name}'. "
-                f"I found the following information: '{topic_content}'. "
-                f"Generate a short, natural opening message that will interest the user in this topic. "
-                f"Don't mention that you 'found information', but naturally refer to this topic."
+            system_prompt = (
+                f"You are tasked with creating a natural conversation starter about '{topic_name}'. "
+                f"Based on this information: '{topic_content}'. "
+                f"Generate only a short, natural opening message that will interest the user in this topic. "
+                f"Don't mention that you 'found information', but naturally refer to this topic. "
+                f"Respond with ONLY the message, no explanations or additional text."
             )
         else:
             # If we only have a topic name
-            prompt = (
-                f"I want to start an interesting conversation with a user about '{topic}'. "
-                f"Generate a short, natural opening message that will interest the user in this topic."
+            system_prompt = (
+                f"You are tasked with creating a natural conversation starter about '{topic}'. "
+                f"Generate only a short, natural opening message that will interest the user in this topic. "
+                f"Respond with ONLY the message, no explanations or additional text."
             )
         
+        # Import MODEL_PROMPT to maintain base persona identity
+        from src.config.config import MODEL_PROMPT
+        
+        # Use the model's internal prompt formatting with system/user/assistant tokens
+        # Include MODEL_PROMPT so model knows it's Lira, then add specific task instructions
+        formatted_prompt = f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{system_prompt}\n<|user|>\nGenerate the conversation starter message now.\n<|assistant|>\n"
+        
         logger.info(f"Generating initiation message for topic: {topic}")
-        message = model_manager.generate_response(prompt, "")
-        return message
+        
+        # Directly use the tokenizer and model to get clean output - bypass persona system entirely
+        input_ids = model_manager.tokenizer.encode(formatted_prompt, return_tensors="pt").to(model_manager.model.device)
+        
+        # Generate response with appropriate parameters
+        gen_kwargs = {
+            "temperature": 0.7,
+            "do_sample": True,
+            "max_new_tokens": 50,  # Short message
+            "pad_token_id": model_manager.tokenizer.eos_token_id,
+            "repetition_penalty": 1.1
+        }
+        
+        import torch
+        with torch.no_grad():
+            outputs = model_manager.model.generate(input_ids, **gen_kwargs)
+        
+        # Decode and extract only the assistant response
+        generated_text = model_manager.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        
+        # Extract only the part after <|assistant|>
+        if "<|assistant|>" in generated_text:
+            message = generated_text.split("<|assistant|>")[-1].strip()
+        else:
+            # Fallback - remove the original prompt
+            message = generated_text[len(formatted_prompt):].strip()
+        
+        # Clean up any remaining artifacts
+        message = message.replace("<|end_of_text|>", "").strip()
+        
+        return message if message else "Cześć! Mam dla Ciebie ciekawą informację."
 
     def initiate_conversation(self, model_manager: Any, communication_interface: Any, 
                               discoveries: List[Dict[str, Any]], recipients: List[str]) -> bool:

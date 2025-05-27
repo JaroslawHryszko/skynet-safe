@@ -3,52 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SKYNET-SAFE Monitor</title>
+    <title>SKYNET-SAFE System Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>SKYNET-SAFE Activity Monitor</h1>
-            <p class="current-status">Current status: <span id="status-text">Checking...</span></p>
+            <h1>SKYNET-SAFE System Dashboard</h1>
+            <div class="status-indicator">
+                <span class="status-dot" id="status-dot"></span>
+                <span id="system-status">Connecting...</span>
+                <span class="timestamp" id="last-update">Never</span>
+            </div>
         </header>
 
-        <main>
-            <section class="current-activity">
+        <main class="dashboard-grid">
+            <!-- Current Activity Section -->
+            <section class="card current-activity">
                 <h2>Current Activity</h2>
-                <div id="current-activity-content" class="activity-content">
-                    <p class="loading">Loading...</p>
+                <div class="activity-display">
+                    <div class="activity-icon" id="activity-icon">🤖</div>
+                    <div class="activity-info">
+                        <h3 id="current-activity-text">Loading...</h3>
+                        <p class="activity-description" id="activity-description">System initializing</p>
+                    </div>
                 </div>
             </section>
 
-            <section class="recent-activities">
+            <!-- Persona State Section -->
+            <section class="card persona-state">
+                <h2>Persona State</h2>
+                <div class="persona-info">
+                    <h3 id="persona-name">Loading...</h3>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <label>Self-Awareness Level</label>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="self-awareness-bar"></div>
+                                <span class="progress-text" id="self-awareness-text">0.00</span>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <label>Identity Strength</label>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="identity-strength-bar"></div>
+                                <span class="progress-text" id="identity-strength-text">0.00</span>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <label>Metacognition Depth</label>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="metacognition-bar"></div>
+                                <span class="progress-text" id="metacognition-text">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="persona-stats">
+                        <div class="stat">
+                            <span class="stat-number" id="interests-count">0</span>
+                            <span class="stat-label">Interests</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="interactions-count">0</span>
+                            <span class="stat-label">Interactions</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Personality Traits Section -->
+            <section class="card personality-traits">
+                <h2>Personality Traits</h2>
+                <div class="traits-list" id="traits-list">
+                    <div class="loading">Loading traits...</div>
+                </div>
+            </section>
+
+            <!-- System Issues Section -->
+            <section class="card system-issues">
+                <h2>System Issues</h2>
+                <div class="issues-list" id="issues-list">
+                    <div class="no-issues">✅ No issues detected</div>
+                </div>
+            </section>
+
+            <!-- Recent Activities Section -->
+            <section class="card recent-activities">
                 <h2>Recent Activities</h2>
-                <div id="recent-activities-list" class="activities-list">
-                    <p class="loading">Loading...</p>
+                <div class="activities-timeline" id="activities-timeline">
+                    <div class="loading">Loading activities...</div>
                 </div>
             </section>
 
-            <section class="interaction-details hidden" id="interaction-details">
-                <h2>Interaction Details</h2>
-                <div class="interaction-content">
-                    <div class="prompt-section">
-                        <h3>Prompt</h3>
-                        <pre id="prompt-content"></pre>
+            <!-- System Stats Section -->
+            <section class="card system-stats">
+                <h2>System Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">🧠</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="ai-name">Loading...</span>
+                            <span class="stat-label">AI Identity</span>
+                        </div>
                     </div>
-                    <div class="response-section">
-                        <h3>Response</h3>
-                        <pre id="response-content"></pre>
+                    <div class="stat-item">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="uptime">Unknown</span>
+                            <span class="stat-label">Uptime</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="completed-tasks">0</span>
+                            <span class="stat-label">Tasks Completed</span>
+                        </div>
                     </div>
                 </div>
-                <button id="close-details">Close</button>
             </section>
         </main>
 
         <footer>
-            <p>SKYNET-SAFE Monitor &copy; 2025</p>
+            <p>SKYNET-SAFE Real-Time Dashboard &copy; 2025</p>
+            <p class="footer-note">Updates every 5 seconds • Last update: <span id="footer-timestamp">Never</span></p>
         </footer>
     </div>
 
-    <script src="{{ url_for('static', filename='js/monitor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>
