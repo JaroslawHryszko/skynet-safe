@@ -161,6 +161,12 @@ class ModelManager:
         if context == "":
             context = []
             
+        # Debug logging to track context usage
+        if context:
+            logger.debug(f"Using context with {len(context)} items for query: {query[:50]}...")
+        else:
+            logger.debug(f"No context provided for query: {query[:50]}...")
+            
         # Prepare context for the prompt
         prompt = self._prepare_prompt(query, context)
         

@@ -15,6 +15,8 @@ import subprocess
 from datetime import datetime
 import argparse
 from dotenv import load_dotenv
+import multiprocessing
+from contextlib import contextmanager
 
 # Load environment variables first
 load_dotenv()
@@ -71,49 +73,81 @@ class Daemon:
         
     def daemonize(self):
         """
-        do the UNIX double-fork magic, see Stevens' "Advanced 
-        Programming in the UNIX Environment" for details (ISBN 0201563177)
-        http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
+        Modern daemonization using multiprocessing to avoid fork() deprecation warnings.
         """
-        try: 
-            pid = os.fork() 
-            if pid > 0:
-                # exit first parent
-                sys.exit(0) 
-        except OSError as e: 
-            sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
+        # Check if already running as daemon (no TTY)
+        if not sys.stdout.isatty():
+            # Already daemonized or running in non-interactive environment
+            self._setup_daemon_environment()
+            return
+            
+        # Start daemon process using multiprocessing
+        process = multiprocessing.Process(target=self._daemon_process, daemon=False)
+        process.start()
+        
+        # Wait a moment to ensure process starts
+        time.sleep(0.5)
+        
+        # Check if process is still running
+        if process.is_alive():
+            print(f"Daemon started successfully with PID {process.pid}")
+        else:
+            print("Failed to start daemon process")
             sys.exit(1)
+        
+        # Parent process exits cleanly
+        sys.exit(0)
     
-        # decouple from parent environment
-        # Stay in the current directory to preserve relative paths
-        os.setsid() 
-        os.umask(0)
-    
-        # do second fork
-        try: 
-            pid = os.fork() 
-            if pid > 0:
-                # exit from second parent
-                sys.exit(0) 
-        except OSError as e: 
-            sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
-            sys.exit(1) 
-    
-        # redirect standard file descriptors
-        sys.stdout.flush()
-        sys.stderr.flush()
-        si = open(self.stdin, 'r')
-        so = open(self.stdout, 'a+')
-        se = open(self.stderr, 'a+')
-        os.dup2(si.fileno(), sys.stdin.fileno())
-        os.dup2(so.fileno(), sys.stdout.fileno())
-        os.dup2(se.fileno(), sys.stderr.fileno())
-    
+    def _daemon_process(self):
+        """The actual daemon process."""
+        self._setup_daemon_environment()
+        
         # write pidfile
         atexit.register(self.delpid)
         pid = str(os.getpid())
         with open(self.pidfile,'w+') as f:
             f.write("%s\n" % pid)
+            
+        # Run the daemon
+        self.run()
+    
+    def _setup_daemon_environment(self):
+        """Setup daemon environment (session, umask, file descriptors)."""
+        # Create new session
+        try:
+            os.setsid()
+        except OSError:
+            # Already session leader or not supported
+            pass
+            
+        # Set umask
+        os.umask(0)
+        
+        # Redirect standard file descriptors
+        sys.stdout.flush()
+        sys.stderr.flush()
+        
+        # Only redirect if we have valid file paths
+        if hasattr(self, 'stdin') and self.stdin:
+            try:
+                si = open(self.stdin, 'r')
+                os.dup2(si.fileno(), sys.stdin.fileno())
+            except (OSError, IOError):
+                pass
+                
+        if hasattr(self, 'stdout') and self.stdout:
+            try:
+                so = open(self.stdout, 'a+')
+                os.dup2(so.fileno(), sys.stdout.fileno())
+            except (OSError, IOError):
+                pass
+                
+        if hasattr(self, 'stderr') and self.stderr:
+            try:
+                se = open(self.stderr, 'a+')
+                os.dup2(se.fileno(), sys.stderr.fileno())
+            except (OSError, IOError):
+                pass
     
     def delpid(self):
         os.remove(self.pidfile)
@@ -130,13 +164,18 @@ class Daemon:
             pid = None
     
         if pid:
-            message = "pidfile %s already exists. Daemon already running?\n"
-            sys.stderr.write(message % self.pidfile)
-            sys.exit(1)
+            try:
+                # Check if process is actually running
+                os.kill(pid, 0)
+                message = "pidfile %s already exists. Daemon already running?\n"
+                sys.stderr.write(message % self.pidfile)
+                sys.exit(1)
+            except OSError:
+                # Process not running, remove stale pidfile
+                os.remove(self.pidfile)
         
         # Start the daemon
         self.daemonize()
-        self.run()
 
     def stop(self):
         """
@@ -380,7 +419,7 @@ class SkynetDaemon(Daemon):
             # Register signal handlers
             def handle_signal(sig, frame):
                 self.logger.info(f"Received signal {sig}, shutting down...")
-                system._cleanup()
+                system.shutdown()  # Use proper shutdown method
                 with open(status_file, "w") as f:
                     json.dump({
                         "status": "stopped",
@@ -695,9 +734,9 @@ def main():
         # Write PID file without daemonizing
         with open(daemon.pidfile, 'w+') as f:
             f.write("%s\n" % os.getpid())
-        try:
-            daemon.run()
-        except KeyboardInterrupt:
+        
+        def cleanup_foreground():
+            """Clean up resources when exiting foreground mode."""
             print("\nShutting down SKYNET-SAFE...")
             
             # Also stop web interface if it was started
@@ -713,6 +752,17 @@ def main():
                     
             if os.path.exists(daemon.pidfile):
                 os.remove(daemon.pidfile)
+        
+        try:
+            daemon.run()
+        except KeyboardInterrupt:
+            cleanup_foreground()
+        except Exception as e:
+            print(f"Error in foreground mode: {e}")
+            cleanup_foreground()
+            sys.exit(1)
+        finally:
+            cleanup_foreground()
 
 
 if __name__ == "__main__":

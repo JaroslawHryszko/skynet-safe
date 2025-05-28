@@ -55,6 +55,7 @@ class SkynetSystem:
     def __init__(self, config: Dict[str, Any]):
         """Initialize the system with configuration."""
         self.config = config
+        self.shutdown_requested = False  # Add shutdown flag
         logger.info("Initializing SKYNET-SAFE system...")
         
         # Initialize core modules (Phase 1)
@@ -148,7 +149,7 @@ class SkynetSystem:
         logger.info("Starting SKYNET-SAFE system...")
         
         try:
-            while True:
+            while not self.shutdown_requested:
                 # Increment iteration counter
                 self.loop_iterations += 1
                 
@@ -156,6 +157,13 @@ class SkynetSystem:
                 messages = self.communication.receive_messages()
                 
                 for message in messages:
+                    # Check for shutdown request in message
+                    if message.get("content", "").lower().strip() in ["shutdown", "exit", "quit"]:
+                        logger.info(f"Shutdown requested by {message['sender']}")
+                        self.shutdown_requested = True
+                        self.communication.send_message(message["sender"], "System shutdown initiated.")
+                        break
+                    
                     # Update active users list
                     if message["sender"] not in self.active_users:
                         self.active_users.append(message["sender"])
@@ -169,6 +177,10 @@ class SkynetSystem:
                     # Send response
                     self.communication.send_message(message["sender"], response)
                 
+                # Check shutdown flag again before periodic tasks
+                if self.shutdown_requested:
+                    break
+                
                 # Periodic tasks (every 60 iterations, about 1 minute)
                 if self.loop_iterations % 60 == 0:
                     self._perform_periodic_tasks()
@@ -179,12 +191,19 @@ class SkynetSystem:
         except KeyboardInterrupt:
             logger.info("Stopping SKYNET-SAFE system...")
             self.communication.send_system_message("System zatrzymywany przez użytkownika.", "WARNING")
-            self._cleanup()
         except Exception as e:
             logger.error(f"Error in main system loop: {e}")
             self.communication.send_system_message(f"Krytyczny błąd systemu: {str(e)}", "CRITICAL")
-            self._cleanup()
             raise
+        finally:
+            # Always cleanup on exit
+            self._cleanup()
+            logger.info("SKYNET-SAFE system stopped.")
+    
+    def shutdown(self):
+        """Request system shutdown."""
+        logger.info("System shutdown requested...")
+        self.shutdown_requested = True
 
     def process_message(self, message: Dict[str, Any]) -> str:
         """Process message and generate response.
@@ -223,8 +242,8 @@ class SkynetSystem:
         # Store in memory
         self.memory.store_interaction({**message, "content": sanitized_content})
         
-        # Extract context from memory
-        context = self.memory.retrieve_relevant_context(sanitized_content)
+        # Extract hybrid context from memory (semantic + conversation)
+        context = self.memory.get_hybrid_context(sanitized_content, self.config["MEMORY"])
         
         # Add persona context to system prompt (not as response transformation)
         persona_context = self.persona.get_persona_context()

@@ -88,21 +88,21 @@ def test_get_topic_for_initiation(initiator_config, mock_discoveries):
     """Test wyboru tematu do inicjacji konwersacji."""
     initiator = ConversationInitiator(initiator_config)
     
-    # Przypadek 1: Dostępne odkrycia
-    with patch("src.modules.conversation_initiator.conversation_initiator.random.choice") as mock_choice:
-        mock_choice.return_value = mock_discoveries[0]
+    # Przypadek 1: Dostępne odkrycia - inteligentny wybór
+    topic = initiator.get_topic_for_initiation(mock_discoveries)
+    assert topic is not None
+    assert isinstance(topic, dict)
+    assert "topic" in topic
+    assert "content" in topic
+    # Should be one of the provided discoveries
+    assert topic in mock_discoveries
         
-        topic = initiator.get_topic_for_initiation(mock_discoveries)
-        assert topic is not None
-        assert topic == mock_discoveries[0]
-        
-    # Przypadek 2: Brak odkryć, wybór z domyślnych tematów
-    with patch("src.modules.conversation_initiator.conversation_initiator.random.choice") as mock_choice:
-        mock_choice.return_value = "metaświadomość"
-        
-        topic = initiator.get_topic_for_initiation([])
-        assert topic is not None
-        assert topic == "metaświadomość"
+    # Przypadek 2: Brak odkryć, wybór z domyślnych tematów z inteligentnym scoring
+    topic = initiator.get_topic_for_initiation([])
+    assert topic is not None
+    assert isinstance(topic, str)
+    # Should be one of the predefined topics of interest
+    assert topic in initiator_config["topics_of_interest"]
 
 
 def test_generate_initiation_message(initiator_config, mock_discoveries):

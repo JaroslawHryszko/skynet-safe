@@ -63,3 +63,6 @@ models/
 
 # Cache files
 .cache/
+
+#shell scripts
+*.sh

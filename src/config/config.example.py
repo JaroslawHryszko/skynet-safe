@@ -112,9 +112,24 @@ ETHICAL_GUIDELINES_PL = [
 
 # Memory configuration
 MEMORY = {
+    # Długoterminowa pamięć semantyczna
     "vector_db_type": "chroma",
     "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
-    "memory_path": os.getenv("MEMORY_PATH", "./data/memory")
+    "memory_path": os.getenv("MEMORY_PATH", "./data/memory"),
+    
+    # Pamięć konwersacyjna (hybrydowe rozwiązanie)
+    "conversation_memory": {
+        "enabled": True,
+        "max_interactions": 5,  # Ostatnie 5 par Q&A w promptcie
+        "max_tokens_conversation": 1000,  # Limit tokenów dla konwersacji
+        "include_in_prompt": True  # Czy dodawać do prompta
+    },
+    
+    # Łączenie kontekstów
+    "context_strategy": "hybrid",  # semantic + conversation
+    "max_semantic_results": 3,
+    "max_conversation_pairs": 5,
+    "conversation_weight": 0.7,  # Waga pamięci konwersacyjnej vs semantycznej
 }
 
 # Communication configuration

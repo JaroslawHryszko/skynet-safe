@@ -197,13 +197,20 @@ class MemoryManager:
             # Add interactions
             if interactions_results["documents"] and len(interactions_results["documents"]) > 0:
                 context.extend(interactions_results["documents"][0])
+                logger.debug(f"Retrieved {len(interactions_results['documents'][0])} interactions for context")
+            else:
+                logger.debug("No interactions found in memory for context")
             
             # Add reflections
             if reflections_results["documents"] and len(reflections_results["documents"]) > 0:
                 # Prefix reflections with a marker
                 for reflection in reflections_results["documents"][0]:
                     context.append("SYSTEM REFLECTION: " + reflection)
+                logger.debug(f"Retrieved {len(reflections_results['documents'][0])} reflections for context")
+            else:
+                logger.debug("No reflections found in memory for context")
             
+            logger.debug(f"Total context items retrieved: {len(context)} for query: {query[:50]}...")
             return context
             
         except Exception as e:
@@ -274,6 +281,90 @@ class MemoryManager:
     def retrieve_recent_interactions(self, n: int = 10) -> List[Dict[str, Any]]:
         """Alias for retrieve_last_interactions for naming consistency."""
         return self.retrieve_last_interactions(n)
+    
+    def get_conversation_context(self, n_pairs: int = 5) -> List[str]:
+        """Pobierz ostatnie N par Q&A jako prosty kontekst konwersacyjny.
+        
+        Args:
+            n_pairs: Liczba par pytanie-odpowiedź do pobrania
+            
+        Returns:
+            Lista stringów z kontekstem konwersacyjnym w formacie Q: ... A: ...
+        """
+        try:
+            recent_interactions = self.retrieve_last_interactions(n=n_pairs)
+            context = []
+            
+            if recent_interactions:
+                logger.debug(f"Building conversation context from {len(recent_interactions)} interactions")
+                
+                for interaction in recent_interactions:
+                    # Dodaj pytanie użytkownika
+                    user_content = interaction.get('content', '')
+                    if user_content:
+                        context.append(f"Previous Q: {user_content}")
+                    
+                    # Dodaj odpowiedź systemu jeśli istnieje
+                    system_response = interaction.get('response', '')
+                    if system_response:
+                        context.append(f"Previous A: {system_response}")
+                
+                logger.debug(f"Generated {len(context)} conversation context items")
+            else:
+                logger.debug("No recent interactions found for conversation context")
+            
+            return context
+            
+        except Exception as e:
+            logger.error(f"Error building conversation context: {e}")
+            return []
+    
+    def get_hybrid_context(self, query: str, config: Dict[str, Any]) -> List[str]:
+        """Pobierz hybrydowy kontekst łączący semantic search i conversation history.
+        
+        Args:
+            query: Zapytanie użytkownika
+            config: Konfiguracja pamięci z MEMORY sekcji
+            
+        Returns:
+            Lista kontekstu łącząca semantic i conversation context
+        """
+        try:
+            context = []
+            
+            # Sprawdź strategię kontekstu
+            strategy = config.get("context_strategy", "hybrid")
+            
+            if strategy in ["semantic", "hybrid"]:
+                # Pobierz kontekst semantyczny
+                max_semantic = config.get("max_semantic_results", 3)
+                semantic_context = self.retrieve_relevant_context(query, n_results=max_semantic)
+                
+                if semantic_context:
+                    context.extend(semantic_context)
+                    logger.debug(f"Added {len(semantic_context)} semantic context items")
+            
+            if strategy in ["conversation", "hybrid"]:
+                # Sprawdź czy pamięć konwersacyjna jest włączona
+                conv_config = config.get("conversation_memory", {})
+                if conv_config.get("enabled", True) and conv_config.get("include_in_prompt", True):
+                    
+                    max_pairs = config.get("max_conversation_pairs", 5)
+                    conversation_context = self.get_conversation_context(n_pairs=max_pairs)
+                    
+                    if conversation_context:
+                        # Dodaj separator dla czytelności
+                        if context:  # Jeśli już mamy semantic context
+                            context.append("--- Recent Conversation ---")
+                        context.extend(conversation_context)
+                        logger.debug(f"Added {len(conversation_context)} conversation context items")
+            
+            logger.debug(f"Generated hybrid context with {len(context)} total items")
+            return context
+            
+        except Exception as e:
+            logger.error(f"Error building hybrid context: {e}")
+            return []
     
     def save_state(self) -> None:
         """Save memory state."""
