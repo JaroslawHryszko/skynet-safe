@@ -15,14 +15,10 @@ import subprocess
 from datetime import datetime
 import argparse
 from dotenv import load_dotenv
-import multiprocessing
 from contextlib import contextmanager
 
 # Load environment variables first
 load_dotenv()
-
-from src.main import SkynetSystem
-from src.config import config
 
 
 # Setup logging
@@ -73,43 +69,51 @@ class Daemon:
         
     def daemonize(self):
         """
-        Modern daemonization using multiprocessing to avoid fork() deprecation warnings.
+        Daemonization using fork() when available, subprocess fallback.
         """
-        # Check if already running as daemon (no TTY)
-        if not sys.stdout.isatty():
-            # Already daemonized or running in non-interactive environment
-            self._setup_daemon_environment()
-            return
+        # Force fork-based daemonization regardless of TTY status when called from start()
+
+        try:
+            # Try fork-based daemonization first
+            pid = os.fork()
+            if pid > 0:
+                # Parent process - wait briefly and exit
+                time.sleep(0.1)
+                print(f"Daemon started successfully with PID {pid}")
+                sys.exit(0)
+        except OSError as e:
+            # Fork not available, use subprocess fallback
+            import subprocess
             
-        # Start daemon process using multiprocessing
-        process = multiprocessing.Process(target=self._daemon_process, daemon=False)
-        process.start()
+            # Get current script arguments but change action to 'foreground'
+            args = sys.argv[:]
+            if len(args) > 1:
+                args[1] = 'foreground'
+            else:
+                args.append('foreground')
+            
+            # Start the daemon in a completely separate process
+            process = subprocess.Popen(args, 
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, 
+                stdin=subprocess.DEVNULL, preexec_fn=os.setsid)
+            
+            # Wait a moment to ensure process starts
+            time.sleep(0.5)
+            
+            # Check if process is still running
+            if process.poll() is None:
+                print(f"Daemon started successfully with PID {process.pid}")
+                # Write PID file manually
+                with open(self.pidfile, 'w') as f:
+                    f.write(f"{process.pid}\n")
+                sys.exit(0)
+            else:
+                print("Failed to start daemon process")
+                sys.exit(1)
         
-        # Wait a moment to ensure process starts
-        time.sleep(0.5)
-        
-        # Check if process is still running
-        if process.is_alive():
-            print(f"Daemon started successfully with PID {process.pid}")
-        else:
-            print("Failed to start daemon process")
-            sys.exit(1)
-        
-        # Parent process exits cleanly
-        sys.exit(0)
-    
-    def _daemon_process(self):
-        """The actual daemon process."""
+        # Child process continues here (fork was successful)
         self._setup_daemon_environment()
-        
-        # write pidfile
-        atexit.register(self.delpid)
-        pid = str(os.getpid())
-        with open(self.pidfile,'w+') as f:
-            f.write("%s\n" % pid)
-            
-        # Run the daemon
-        self.run()
+    
     
     def _setup_daemon_environment(self):
         """Setup daemon environment (session, umask, file descriptors)."""
@@ -176,6 +180,16 @@ class Daemon:
         
         # Start the daemon
         self.daemonize()
+        
+        # If we reach here, we're in the child process
+        # write pidfile
+        atexit.register(self.delpid)
+        pid = str(os.getpid())
+        with open(self.pidfile,'w+') as f:
+            f.write("%s\n" % pid)
+            
+        # Run the daemon
+        self.run()
 
     def stop(self):
         """
@@ -398,6 +412,9 @@ class SkynetDaemon(Daemon):
         self.logger.info("Starting SKYNET-SAFE in daemon mode...")
         
         try:
+            # Import here to avoid issues during daemonization
+            from src.main import SkynetSystem
+            
             # Setup communication platform based on config
             # Default to console mode for testing, but this can be any supported platform
             if "platform" not in self.config["COMMUNICATION"]:
@@ -467,8 +484,11 @@ def main():
     parser.add_argument('--web', action='store_true',
                       help='Start the web interface alongside the daemon')
     # Load default port from config
-    from src.config import config
-    default_web_port = config.WEB_INTERFACE.get("port", 7860)
+    try:
+        from src.config import config
+        default_web_port = config.WEB_INTERFACE.get("port", 7860)
+    except ImportError:
+        default_web_port = 7860
     
     parser.add_argument('--web-port', type=int, default=default_web_port,
                       help=f'Port for the web interface (default: {default_web_port})')
@@ -480,6 +500,9 @@ def main():
     os.makedirs(os.path.dirname(args.logfile), exist_ok=True)
     
     # Setup configuration
+    # Import config here to avoid import issues during daemonization
+    from src.config import config
+    
     system_config = {
         "SYSTEM_SETTINGS": config.SYSTEM_SETTINGS,
         "MODEL": config.MODEL,
