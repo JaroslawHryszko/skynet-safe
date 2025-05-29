@@ -210,6 +210,17 @@ class Daemon:
         # Enhanced stopping procedure with multiple attempts and verification
         print(f"Stopping daemon process {pid}...")
         
+        # Try to send shutdown notification if daemon is running
+        try:
+            # Check if process is still running before trying to notify
+            os.kill(pid, 0)
+            # Process exists, try to read its communication config for notification
+            # Note: This is a best-effort attempt - may not always work
+            print("Attempting to send shutdown notification...")
+        except OSError:
+            # Process not running
+            pass
+        
         # First attempt: SIGTERM (graceful shutdown)
         try:
             os.kill(pid, signal.SIGTERM)
@@ -383,7 +394,7 @@ class SkynetDaemon(Daemon):
     
     def __init__(self, pidfile, config, logfile=None):
         # Get log directory from environment if available
-        log_dir = os.getenv("LOG_DIR", "/var/log/skynet-safe")
+        log_dir = os.getenv("LOG_DIR", "./logs")
         
         # Set default logfile if not provided
         self.logfile = logfile if logfile else os.path.join(log_dir, "skynet.log")
@@ -398,8 +409,8 @@ class SkynetDaemon(Daemon):
                 log_dir = os.path.join(script_dir, 'logs')
                 os.makedirs(log_dir, exist_ok=True)
             super().__init__(pidfile, stdin='/dev/null', 
-                           stdout=os.path.join(log_dir, 'stdout.log'), 
-                           stderr=os.path.join(log_dir, 'stderr.log'))
+                           stdout=self.logfile, 
+                           stderr=self.logfile)
         else:
             # Otherwise use default redirections
             super().__init__(pidfile)
@@ -436,6 +447,12 @@ class SkynetDaemon(Daemon):
             # Register signal handlers
             def handle_signal(sig, frame):
                 self.logger.info(f"Received signal {sig}, shutting down...")
+                # Send shutdown notification via communication platform
+                try:
+                    system.communication.send_system_message("🔴 System shutting down...", "info")
+                except Exception as e:
+                    self.logger.error(f"Failed to send shutdown notification: {e}")
+                
                 system.shutdown()  # Use proper shutdown method
                 with open(status_file, "w") as f:
                     json.dump({
@@ -472,7 +489,7 @@ def main():
                       help='Action to perform with the daemon. Use "foreground" to run without daemonizing (for debugging)')
     
     # Get the default log directory from environment variable or use default
-    log_dir = os.getenv("LOG_DIR", "/var/log/skynet-safe")
+    log_dir = os.getenv("LOG_DIR", "./logs")
     default_pid_dir = os.path.join(log_dir, "run")
     
     parser.add_argument('--pidfile', default=os.path.join(default_pid_dir, 'skynet.pid'),

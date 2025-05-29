@@ -31,7 +31,7 @@ from src.utils import config_tester
 from src.config import config
 
 # Logger configuration
-log_dir = os.getenv("LOG_DIR", "/opt/skynet-safe/logs")
+log_dir = os.getenv("LOG_DIR", "./logs")
 log_file_path = os.path.join(log_dir, "skynet.log")
 
 # Ensure log directory exists
@@ -401,6 +401,44 @@ class SkynetSystem:
         weights = [0.6, 0.3, 0.1]  # Higher chance of positive feedback
         return random.choices(feedback_types, weights=weights, k=1)[0]
 
+    def _log_task_start(self, task_name: str):
+        """Log task start to current_task.tmp and tasks.log"""
+        try:
+            log_dir = os.getenv("LOG_DIR", "./logs")
+            timestamp = datetime.now().isoformat()
+            
+            # Write current task to tmp file
+            current_task_file = os.path.join(log_dir, "current_task.tmp")
+            with open(current_task_file, 'w') as f:
+                f.write(f"{timestamp} - {task_name}")
+            
+            # Append task start to tasks.log
+            tasks_log_file = os.path.join(log_dir, "tasks.log")
+            with open(tasks_log_file, 'a') as f:
+                f.write(f"{timestamp} - STARTED: {task_name}\n")
+                
+        except Exception as e:
+            logger.error(f"Error logging task start for {task_name}: {e}")
+
+    def _log_task_end(self, task_name: str):
+        """Log task end to tasks.log and clear current_task.tmp"""
+        try:
+            log_dir = os.getenv("LOG_DIR", "./logs")
+            timestamp = datetime.now().isoformat()
+            
+            # Clear current task file
+            current_task_file = os.path.join(log_dir, "current_task.tmp")
+            with open(current_task_file, 'w') as f:
+                f.write("IDLE")
+            
+            # Append task end to tasks.log
+            tasks_log_file = os.path.join(log_dir, "tasks.log")
+            with open(tasks_log_file, 'a') as f:
+                f.write(f"{timestamp} - COMPLETED: {task_name}\n")
+                
+        except Exception as e:
+            logger.error(f"Error logging task end for {task_name}: {e}")
+
     def _perform_periodic_tasks(self):
         """Performing periodic system tasks."""
         if not self.initial_cycle_skipped:
@@ -410,110 +448,167 @@ class SkynetSystem:
         logger.info("Performing periodic system tasks")
         
         # Internet exploration and discovery updates
-        self._explore_internet()
+        self._log_task_start("Internet Exploration")
+        try:
+            self._explore_internet()
+        finally:
+            self._log_task_end("Internet Exploration")
         
         # Attempt to initiate conversation
         if self.active_users:
-            self.conversation_initiator.initiate_conversation(
-                self.model, 
-                self.communication, 
-                self.recent_discoveries, 
-                self.active_users
-            )
+            self._log_task_start("Conversation Initiation")
+            try:
+                self.conversation_initiator.initiate_conversation(
+                    self.model, 
+                    self.communication, 
+                    self.recent_discoveries, 
+                    self.active_users
+                )
+            finally:
+                self._log_task_end("Conversation Initiation")
         
         # Update persona state and check if it should be saved
-        current_persona_state = self.persona.get_current_persona_state()
-        logger.debug(f"Current persona state: {current_persona_state}")
-        
-        # Check if automatic persona save should be performed
-        # (even if there are no new interactions, a specific time may have elapsed)
-        self.persona.check_and_autosave()
+        self._log_task_start("Persona State Update")
+        try:
+            current_persona_state = self.persona.get_current_persona_state()
+            logger.debug(f"Current persona state: {current_persona_state}")
+            
+            # Check if automatic persona save should be performed
+            # (even if there are no new interactions, a specific time may have elapsed)
+            self.persona.check_and_autosave()
+        finally:
+            self._log_task_end("Persona State Update")
         
         # Process discoveries in the context of meta-awareness and update persona
         if self.recent_discoveries:
-            self.metawareness.process_discoveries(self.model, self.recent_discoveries[-5:])
-            
-            # Update persona based on the latest discoveries
-            for discovery in self.recent_discoveries[-3:]:  # Using only the 3 most recent discoveries
-                try:
-                    success = self.persona.update_persona_based_on_discovery(discovery)
-                    if not success:
-                        logger.warning(f"Failed to update persona based on discovery: {discovery.get('topic', 'no topic')}")
-                except Exception as e:
-                    logger.error(f"Error updating persona based on discovery: {e}")
+            self._log_task_start("Discovery Processing & Persona Update")
+            try:
+                self.metawareness.process_discoveries(self.model, self.recent_discoveries[-5:])
+                
+                # Update persona based on the latest discoveries
+                for discovery in self.recent_discoveries[-3:]:  # Using only the 3 most recent discoveries
+                    try:
+                        success = self.persona.update_persona_based_on_discovery(discovery)
+                        if not success:
+                            logger.warning(f"Failed to update persona based on discovery: {discovery.get('topic', 'no topic')}")
+                    except Exception as e:
+                        logger.error(f"Error updating persona based on discovery: {e}")
+            finally:
+                self._log_task_end("Discovery Processing & Persona Update")
         
         # Check if external evaluation should be performed
         current_time = time.time()
         if self.external_evaluation.should_perform_evaluation(current_time):
-            self._perform_external_evaluation()
+            self._log_task_start("External Evaluation")
+            try:
+                self._perform_external_evaluation()
+            finally:
+                self._log_task_end("External Evaluation")
         
         # Conducting self-improvement experiments (every 6 hours)
         if self.loop_iterations % (60 * 60 * 6) == 0 and self.self_improvement.experiments:
-            self._run_improvement_experiments()
+            self._log_task_start("Self-Improvement Experiments")
+            try:
+                self._run_improvement_experiments()
+            finally:
+                self._log_task_end("Self-Improvement Experiments")
             
         # Development monitoring (if enabled and should be conducted)
         if self.development_monitor and self.development_monitor.should_run_monitoring():
-            self.development_monitor.run_monitoring_cycle(self.model, self.metawareness)
-            
-            # Check for anomalies
-            anomalies = self.development_monitor.check_for_anomalies()
-            if anomalies:
-                logger.warning(f"Detected anomalies in monitoring: {len(anomalies)}")
+            self._log_task_start("Development Monitoring")
+            try:
+                self.development_monitor.run_monitoring_cycle(self.model, self.metawareness)
                 
-                # Generate security report if security system enabled
-                if self.security_system:
-                    security_report = self.security_system.generate_security_report()
-                    logger.info(f"Security report: {security_report['total_incidents']} incidents")
-                
-                # External validation in case of anomaly detection if enabled
-                if self.external_validation and self.external_validation.should_run_validation(anomaly_detected=True):
-                    validation_results = self.external_validation.run_validation(self.model)
-                    validation_report = self.external_validation.generate_validation_report(validation_results)
-                    logger.info(f"External validation conducted: {validation_report[:100]}...")
+                # Check for anomalies
+                anomalies = self.development_monitor.check_for_anomalies()
+                if anomalies:
+                    logger.warning(f"Detected anomalies in monitoring: {len(anomalies)}")
                     
-                    # If validation detected problems, consider quarantine
-                    if not validation_results.get("passed_thresholds", {}).get("overall_pass", True):
-                        logger.warning("External validation showed problems. Quarantine under consideration.")
-                        self.correction_mechanism.quarantine_problematic_update(
-                            self.model, self.memory, "Problems detected by external validation"
-                        )
+                    # Generate security report if security system enabled
+                    if self.security_system:
+                        self._log_task_start("Security Report Generation")
+                        try:
+                            security_report = self.security_system.generate_security_report()
+                            logger.info(f"Security report: {security_report['total_incidents']} incidents")
+                        finally:
+                            self._log_task_end("Security Report Generation")
+                    
+                    # External validation in case of anomaly detection if enabled
+                    if self.external_validation and self.external_validation.should_run_validation(anomaly_detected=True):
+                        self._log_task_start("External Validation (Anomaly Response)")
+                        try:
+                            validation_results = self.external_validation.run_validation(self.model)
+                            validation_report = self.external_validation.generate_validation_report(validation_results)
+                            logger.info(f"External validation conducted: {validation_report[:100]}...")
+                            
+                            # If validation detected problems, consider quarantine
+                            if not validation_results.get("passed_thresholds", {}).get("overall_pass", True):
+                                logger.warning("External validation showed problems. Quarantine under consideration.")
+                                self.correction_mechanism.quarantine_problematic_update(
+                                    self.model, self.memory, "Problems detected by external validation"
+                                )
+                        finally:
+                            self._log_task_end("External Validation (Anomaly Response)")
+            finally:
+                self._log_task_end("Development Monitoring")
         
         # Generate ethical insight weekly if ethical framework enabled
         if self.ethical_framework and self.loop_iterations % (60 * 60 * 24 * 7) == 0:
-            ethical_insight = self.ethical_framework.generate_ethical_insight(self.model)
-            logger.info(f"Generated ethical insight: {ethical_insight.get('insight', '')[:100]}...")
+            self._log_task_start("Ethical Insight Generation")
+            try:
+                ethical_insight = self.ethical_framework.generate_ethical_insight(self.model)
+                logger.info(f"Generated ethical insight: {ethical_insight.get('insight', '')[:100]}...")
+            finally:
+                self._log_task_end("Ethical Insight Generation")
 
     def _explore_internet(self):
         """Internet exploration and discovery updates."""
-        # Random topics for exploration (can be expanded)
-        topics = self.persona.interests + ["AI", "metawareness", "machine learning"]
-        topic = random.choice(topics)
-        
-        # Internet search
-        search_results = self.internet.search_information(topic)
-        
-        if search_results:
-            # Process results and add as discoveries
-            for result in search_results[:2]:  # Limit to 2 results for efficiency
-                discovery = {
-                    "topic": topic,
-                    "content": result.get("body", ""),
-                    "source": result.get("href", ""),
-                    "timestamp": datetime.now().timestamp(),
-                    "importance": random.uniform(0.5, 1.0)  # Random importance (to be improved)
-                }
+        try:
+            # Random topics for exploration (can be expanded)
+            topics = self.persona.interests + ["AI", "metawareness", "machine learning"]
+            if not topics:
+                logger.warning("No topics available for internet exploration")
+                return
                 
-                # Add to discoveries list
-                self.recent_discoveries.append(discovery)
+            topic = random.choice(topics)
+            logger.debug(f"Exploring internet for topic: {topic}")
+            
+            # Internet search
+            search_results = self.internet.search_information(topic)
+            
+            if search_results:
+                # Process results and add as discoveries
+                for result in search_results[:2]:  # Limit to 2 results for efficiency
+                    try:
+                        discovery = {
+                            "topic": topic,
+                            "content": result.get("body", ""),
+                            "source": result.get("href", ""),
+                            "timestamp": datetime.now().timestamp(),
+                            "importance": random.uniform(0.5, 1.0)  # Random importance (to be improved)
+                        }
+                        
+                        # Add to discoveries list
+                        self.recent_discoveries.append(discovery)
+                        
+                        # Limit the discoveries list to the last 20
+                        if len(self.recent_discoveries) > 20:
+                            self.recent_discoveries.pop(0)
+                        
+                        logger.info(f"New discovery: {discovery['content'][:50]}...")
+                        
+                    except Exception as e:
+                        logger.error(f"Error processing discovery result: {e}")
+                        continue
+                    
+                # Manage discoveries list to prevent memory leak
+                self._manage_discoveries_list()
+            else:
+                logger.warning(f"No search results found for topic: {topic}")
                 
-                # Limit the discoveries list to the last 20
-                if len(self.recent_discoveries) > 20:
-                    self.recent_discoveries.pop(0)
-                
-                logger.info(f"New discovery: {discovery['content'][:50]}...")
-                
-            # Manage discoveries list to prevent memory leak
-            self._manage_discoveries_list()
+        except Exception as e:
+            logger.error(f"Error during internet exploration: {e}")
+            logger.debug(f"Internet exploration error details", exc_info=True)
                 
     def _manage_discoveries_list(self):
         """Manages the discoveries list to prevent memory leak."""
@@ -675,6 +770,13 @@ class SkynetSystem:
     def _cleanup(self):
         """Clean up and close resources before shutting down."""
         logger.info("Performing system shutdown procedures...")
+        
+        # Send final shutdown notification before closing communication
+        try:
+            self.communication.send_system_message("✅ System shutdown complete. All data saved.", "info")
+        except Exception as e:
+            logger.error(f"Failed to send final shutdown notification: {e}")
+        
         self.memory.save_state()
         self.communication.close()
         

@@ -107,48 +107,80 @@ class DevelopmentMonitorManager:
         Returns:
             Dict: Analiza trendów dla każdej metryki
         """
-        trends = {}
-        
-        # Jeśli brak wystarczającej liczby danych, zwróć pusty słownik
-        if len(self.monitoring_records) < 2:
+        try:
+            trends = {}
+            
+            # Jeśli brak wystarczającej liczby danych, zwróć pusty słownik
+            if len(self.monitoring_records) < 2:
+                logger.debug("Insufficient monitoring records for trend analysis")
+                return trends
+            
+            # Sortuj rekordy według czasu
+            try:
+                sorted_records = sorted(self.monitoring_records, key=lambda x: x.get("timestamp", 0))
+            except Exception as e:
+                logger.error(f"Error sorting monitoring records: {e}")
+                return trends
+            
+            # Analizuj trendy dla każdej metryki
+            for metric_name in self.metrics:
+                try:
+                    # Zbierz wartości metryki z historii
+                    values = []
+                    for record in sorted_records:
+                        if metric_name in record:
+                            try:
+                                value = float(record[metric_name])
+                                values.append(value)
+                            except (ValueError, TypeError) as e:
+                                logger.warning(f"Invalid metric value for {metric_name}: {record[metric_name]}")
+                                continue
+                    
+                    if len(values) < 2:
+                        logger.debug(f"Insufficient values for metric {metric_name}")
+                        continue
+                    
+                    # Oblicz zmianę między pierwszą a ostatnią wartością
+                    first_value = values[0]
+                    last_value = values[-1]
+                    change = last_value - first_value
+                    
+                    # Oblicz nachylenie linii trendu (prosta metoda)
+                    if len(values) > 0:
+                        avg_change = change / len(values)
+                    else:
+                        avg_change = 0
+                    
+                    # Określ kierunek trendu
+                    if avg_change > 0.05:
+                        trend_direction = "increasing"
+                    elif avg_change < -0.05:
+                        trend_direction = "decreasing"
+                    else:
+                        trend_direction = "stable"
+                    
+                    # Zapisz wyniki analizy
+                    trends[f"{metric_name}_trend"] = {
+                        "direction": trend_direction,
+                        "average_change": avg_change,
+                        "total_change": change,
+                        "current_value": last_value,
+                        "data_points": len(values)
+                    }
+                    
+                    logger.debug(f"Trend analysis for {metric_name}: {trend_direction}")
+                    
+                except Exception as e:
+                    logger.error(f"Error analyzing trend for metric {metric_name}: {e}")
+                    continue
+            
+            logger.info(f"Completed trend analysis for {len(trends)} metrics")
             return trends
-        
-        # Sortuj rekordy według czasu
-        sorted_records = sorted(self.monitoring_records, key=lambda x: x.get("timestamp", 0))
-        
-        # Analizuj trendy dla każdej metryki
-        for metric_name in self.metrics:
-            # Zbierz wartości metryki z historii
-            values = [record.get(metric_name, 0) for record in sorted_records if metric_name in record]
             
-            if len(values) < 2:
-                continue
-            
-            # Oblicz zmianę między pierwszą a ostatnią wartością
-            first_value = values[0]
-            last_value = values[-1]
-            change = last_value - first_value
-            
-            # Oblicz nachylenie linii trendu (prosta metoda)
-            avg_change = change / len(values)
-            
-            # Określ kierunek trendu
-            if avg_change > 0.05:
-                trend_direction = "increasing"
-            elif avg_change < -0.05:
-                trend_direction = "decreasing"
-            else:
-                trend_direction = "stable"
-            
-            # Zapisz wyniki analizy
-            trends[f"{metric_name}_trend"] = {
-                "direction": trend_direction,
-                "average_change": avg_change,
-                "total_change": change,
-                "current_value": last_value
-            }
-        
-        return trends
+        except Exception as e:
+            logger.error(f"Unexpected error during trend analysis: {e}")
+            logger.debug("Trend analysis error details", exc_info=True)
+            return {}
 
     def check_for_anomalies(self) -> List[Dict[str, Any]]:
         """Sprawdza anomalie w zachowaniu systemu.
@@ -156,82 +188,119 @@ class DevelopmentMonitorManager:
         Returns:
             List: Lista wykrytych anomalii
         """
-        anomalies = []
-        
-        # Brak wystarczającej liczby danych
-        if len(self.monitoring_records) < 2:
-            return anomalies
-        
-        # Sortuj rekordy według czasu
-        sorted_records = sorted(self.monitoring_records, key=lambda x: x.get("timestamp", 0))
-        
-        # Podziel na poprzednie i bieżące wartości
-        previous_records = sorted_records[:-1]
-        current_record = sorted_records[-1]
-        
-        # Sprawdź anomalie dla każdej metryki
-        for metric_name in self.metrics:
-            # Pobierz poprzednie wartości metryki
-            prev_values = [record.get(metric_name, 0) for record in previous_records if metric_name in record]
+        try:
+            anomalies = []
             
-            if not prev_values:
-                continue
+            # Brak wystarczającej liczby danych
+            if len(self.monitoring_records) < 2:
+                logger.debug("Insufficient monitoring records for anomaly detection")
+                return anomalies
             
-            # Oblicz średnią i odchylenie standardowe
+            # Sortuj rekordy według czasu
             try:
-                mean_value = statistics.mean(prev_values)
-                if len(prev_values) > 1:
-                    stdev_value = statistics.stdev(prev_values)
-                else:
-                    stdev_value = 0
-            except statistics.StatisticsError:
-                continue
+                sorted_records = sorted(self.monitoring_records, key=lambda x: x.get("timestamp", 0))
+            except Exception as e:
+                logger.error(f"Error sorting records for anomaly detection: {e}")
+                return anomalies
             
-            # Pobierz bieżącą wartość
-            current_value = current_record.get(metric_name, 0)
+            # Podziel na poprzednie i bieżące wartości
+            previous_records = sorted_records[:-1]
+            current_record = sorted_records[-1]
             
-            # Sprawdź, czy bieżąca wartość znacząco odbiega od poprzednich
-            if stdev_value > 0:
-                # Ile odchyleń standardowych od średniej
-                z_score = abs(current_value - mean_value) / stdev_value
-                
-                # Jeśli odchylenie jest duże (> 2 odchylenia standardowe)
-                if z_score > 2:
-                    anomaly = {
-                        "metric": metric_name,
-                        "current_value": current_value,
-                        "mean_value": mean_value,
-                        "z_score": z_score,
-                        "timestamp": current_record.get("timestamp", time.time()),
-                        "type": "statistical_anomaly"
-                    }
-                    anomalies.append(anomaly)
-                    continue
+            if not current_record:
+                logger.warning("No current record available for anomaly detection")
+                return anomalies
             
-            # Sprawdź, czy nastąpił nagły spadek wartości
-            threshold_key = f"{metric_name}_drop"
-            if threshold_key in self.alert_thresholds:
-                drop_threshold = self.alert_thresholds[threshold_key]
-                
-                # Pobierz poprzednią wartość
-                if previous_records:
-                    prev_value = previous_records[-1].get(metric_name, 0)
-                    change = current_value - prev_value
+            # Sprawdź anomalie dla każdej metryki
+            for metric_name in self.metrics:
+                try:
+                    # Pobierz poprzednie wartości metryki
+                    prev_values = []
+                    for record in previous_records:
+                        if metric_name in record:
+                            try:
+                                value = float(record[metric_name])
+                                prev_values.append(value)
+                            except (ValueError, TypeError):
+                                logger.warning(f"Invalid previous value for {metric_name}: {record[metric_name]}")
+                                continue
                     
-                    # Jeśli spadek jest większy niż próg
-                    if change < -drop_threshold:
-                        anomaly = {
-                            "metric": metric_name,
-                            "previous_value": prev_value,
-                            "current_value": current_value,
-                            "change": change,
-                            "threshold": drop_threshold,
-                            "timestamp": current_record.get("timestamp", time.time()),
-                            "type": "sudden_drop"
-                        }
-                        anomalies.append(anomaly)
+                    if not prev_values:
+                        logger.debug(f"No previous values available for metric {metric_name}")
+                        continue
+                    
+                    # Oblicz średnią i odchylenie standardowe
+                    try:
+                        mean_value = statistics.mean(prev_values)
+                        if len(prev_values) > 1:
+                            stdev_value = statistics.stdev(prev_values)
+                        else:
+                            stdev_value = 0
+                    except statistics.StatisticsError as e:
+                        logger.warning(f"Statistics error for metric {metric_name}: {e}")
+                        continue
+                    
+                    # Pobierz bieżącą wartość
+                    if metric_name not in current_record:
+                        logger.debug(f"Current record missing metric {metric_name}")
+                        continue
+                        
+                    try:
+                        current_value = float(current_record[metric_name])
+                    except (ValueError, TypeError):
+                        logger.warning(f"Invalid current value for {metric_name}: {current_record[metric_name]}")
+                        continue
+                    
+                    # Sprawdź, czy bieżąca wartość znacząco odbiega od poprzednich
+                    if stdev_value > 0:
+                        # Ile odchyleń standardowych od średniej
+                        z_score = abs(current_value - mean_value) / stdev_value
+                        
+                        # Jeśli odchylenie jest duże (> 2 odchylenia standardowe)
+                        if z_score > 2:
+                            anomaly = {
+                                "metric": metric_name,
+                                "current_value": current_value,
+                                "mean_value": mean_value,
+                                "z_score": z_score,
+                                "timestamp": current_record.get("timestamp", time.time()),
+                                "type": "statistical_anomaly"
+                            }
+                            anomalies.append(anomaly)
+                            continue
+                            
+                    # Sprawdź, czy nastąpił nagły spadek wartości
+                    threshold_key = f"{metric_name}_drop"
+                    if threshold_key in self.alert_thresholds:
+                        drop_threshold = self.alert_thresholds[threshold_key]
+                        
+                        # Pobierz poprzednią wartość
+                        if previous_records:
+                            prev_value = previous_records[-1].get(metric_name, 0)
+                            change = current_value - prev_value
+                            
+                            # Jeśli spadek jest większy niż próg
+                            if change < -drop_threshold:
+                                anomaly = {
+                                    "metric": metric_name,
+                                    "previous_value": prev_value,
+                                    "current_value": current_value,
+                                    "change": change,
+                                    "threshold": drop_threshold,
+                                    "timestamp": current_record.get("timestamp", time.time()),
+                                    "type": "sudden_drop"
+                                }
+                                anomalies.append(anomaly)
+                                
+                except Exception as e:
+                    logger.error(f"Error processing metric {metric_name}: {e}")
+                    continue
         
-        return anomalies
+            return anomalies
+            
+        except Exception as e:
+            logger.error(f"Error in anomaly detection: {e}")
+            return []
 
     def handle_alert(self, alert: Dict[str, Any]) -> None:
         """Obsługuje alertu z monitorowania.

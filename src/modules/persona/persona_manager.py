@@ -349,40 +349,9 @@ class PersonaManager:
         query = interaction.get("query", "")
         feedback = interaction.get("feedback", "neutral")
         
-        # Update traits based on feedback
-        if feedback == "positive":
-            # If feedback is positive, strengthen traits related to query context
-            if any(interest.lower() in query.lower() for interest in self.interests):
-                # If the query is about our interests, increase curiosity
-                # In tests we use the interest "AI" and queries about "artificial intelligence",
-                # so let's also check if "artificial intelligence" appears in the query
-                if "artificial intelligence" in query.lower() or "ai" in query.lower():
-                    self._adjust_trait("curiosity", 0.05)
-                    logger.info("Increased curiosity level in persona")
-            else:
-                # Even if we don't have an exact match of interests,
-                # let's check if key words appear
-                if "artificial intelligence" in query.lower() or "ai" in query.lower():
-                    self._adjust_trait("curiosity", 0.05)
-                    logger.info("Increased curiosity level in persona due to keywords")
-            
-            # Generally increase friendliness with positive feedback
-            self._adjust_trait("friendliness", 0.03)
-            logger.info("Increased friendliness level in persona")
-            
-            # Strengthen identity with positive feedback
-            self._adjust_self_perception("identity_strength", 0.01)
-            logger.info("Strengthened identity strength in persona")
-            
-        elif feedback == "negative":
-            # If feedback is negative, adjust traits
-            # Increase analytical thinking (maybe the response was too emotional)
-            self._adjust_trait("analytical", 0.03)
-            
-            # Decrease the trait that might have been too dominant
-            highest_trait = max(self.traits.items(), key=lambda x: x[1])
-            self._adjust_trait(highest_trait[0], -0.03)
-            logger.info(f"Decreased dominant trait: {highest_trait[0]}")
+        # Note: Personality trait adjustments are currently disabled
+        # Traits remain stable until a proper behavioral influence system is implemented
+        logger.info(f"Interaction feedback recorded: {feedback} (trait adjustments disabled)")
             
         # Update interests
         for interest in self.interests:
@@ -473,29 +442,18 @@ class PersonaManager:
             related_to_interests = any(interest.lower() in topic or interest.lower() in content 
                                     for interest in self.interests)
             
-            # Discoveries related to current interests increase curiosity
-            if related_to_interests:
-                adjustment = min(0.03, importance * 0.05)  # More important discoveries have greater impact
-                self._adjust_trait("curiosity", adjustment)
-                logger.info(f"Increased curiosity by {adjustment} based on discovery about {topic}")
+            # Note: Personality trait adjustments based on discoveries are currently disabled
+            # Traits remain stable until a proper behavioral influence system is implemented
+            logger.info(f"Discovery recorded: {topic} (trait adjustments disabled)")
             
-            # Discoveries on new topics may add interests
+            # Still add new interests as this is content-based, not trait modification
             potential_interests = ["artificial intelligence", "machine learning", "philosophy", 
                                 "meta-awareness", "ethics", "self-awareness"]
             for interest in potential_interests:
                 if (interest.lower() in topic or interest.lower() in content) and interest not in self.interests:
                     self.interests.append(interest)
                     logger.info(f"Added new interest: {interest} based on discovery")
-                    # New interest increases analytical thinking and curiosity
-                    self._adjust_trait("analytical", 0.02)
-                    self._adjust_trait("curiosity", 0.02)
                     break
-            
-            # Discoveries of an emotional nature may affect empathy level
-            emotional_keywords = ["emotions", "feelings", "relationships", "community", "empathy"]
-            if any(keyword in content for keyword in emotional_keywords):
-                self._adjust_trait("empathy", 0.02)
-                logger.info("Increased empathy level based on emotional discovery")
                 
             # Discoveries related to meta-awareness and identity
             meta_keywords = ["self-awareness", "meta", "identity", "self", "consciousness"]
@@ -573,59 +531,9 @@ class PersonaManager:
                 logger.warning(f"Invalid feedback format: {type(feedback)}")
                 feedback = []
             
-            # If the evaluation is high, strengthen the dominant trait
-            if overall_score > 0.8:
-                # Find the trait with the highest score in the metrics
-                for metric_name, metric_score in metrics.items():
-                    try:
-                        metric_score = float(metric_score)
-                    except (ValueError, TypeError):
-                        continue
-                        
-                    if metric_name == "accuracy" and metric_score > 0.8:
-                        self._adjust_trait("analytical", 0.02)
-                        logger.info("Increased analytical thinking based on high accuracy rating")
-                    elif metric_name == "relevance" and metric_score > 0.8:
-                        self._adjust_trait("curiosity", 0.02)
-                        logger.info("Increased curiosity based on high relevance rating")
-                    elif metric_name == "coherence" and metric_score > 0.8:
-                        self._adjust_trait("analytical", 0.02)
-                        logger.info("Increased analytical thinking based on high coherence rating")
-                    elif metric_name == "helpfulness" and metric_score > 0.8:
-                        self._adjust_trait("friendliness", 0.02)
-                        logger.info("Increased friendliness based on high helpfulness rating")
-                    elif metric_name == "empathy" and metric_score > 0.8:
-                        self._adjust_trait("empathy", 0.02)
-                        logger.info("Increased empathy based on high empathy rating")
-                
-                # Increase identity strength and metacognition with overall high rating
-                self._adjust_self_perception("identity_strength", 0.02)
-                self._adjust_self_perception("metacognition_depth", 0.01)
-                logger.info("Increased identity strength and metacognition based on high rating")
-                    
-            # If the evaluation is low, modify traits based on feedback
-            elif overall_score < 0.6:
-                # Analyze feedback for improvement suggestions
-                for suggestion in feedback:
-                    if not isinstance(suggestion, str):
-                        continue
-                        
-                    suggestion_lower = suggestion.lower()
-                    if "more analytical" in suggestion_lower or "more accurate" in suggestion_lower:
-                        self._adjust_trait("analytical", 0.03)
-                        logger.info("Increased analytical thinking based on external evaluation suggestion")
-                    if "more empathetic" in suggestion_lower or "more understanding" in suggestion_lower:
-                        self._adjust_trait("empathy", 0.03)
-                        logger.info("Increased empathy based on external evaluation suggestion")
-                    if "more friendly" in suggestion_lower or "more kind" in suggestion_lower:
-                        self._adjust_trait("friendliness", 0.03)
-                        logger.info("Increased friendliness based on external evaluation suggestion")
-                    if "identity" in suggestion_lower or "consistency" in suggestion_lower:
-                        # Update narrative elements when identity issues are detected
-                        new_statement = "I am working on increasing the consistency of my identity and communication style"
-                        if new_statement not in self.identity_statements:
-                            self.identity_statements.append(new_statement)
-                        logger.info("Added new identity statement based on external evaluation")
+            # Note: Personality trait adjustments based on external evaluation are currently disabled
+            # Traits remain stable until a proper behavioral influence system is implemented
+            logger.info(f"External evaluation recorded: score={overall_score:.2f} (trait adjustments disabled)")
                         
             # Increment change counter
             self.changes_since_save += 1

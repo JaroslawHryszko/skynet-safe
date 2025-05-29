@@ -18,7 +18,7 @@ from src.config import config
 from src.modules.communication.handlers.console_handler import ConsoleHandler
 
 # Logger configuration
-log_dir = os.getenv("LOG_DIR", "/opt/skynet-safe/logs")
+log_dir = os.getenv("LOG_DIR", "./logs")
 log_file_path = os.path.join(log_dir, "skynet_interactive.log")
 
 # Ensure log directory exists

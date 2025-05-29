@@ -114,28 +114,64 @@ class ExternalEvaluationManager:
         Returns:
             Dictionary {case_id: {query, context, response}}
         """
-        logger.info(f"Generating system responses to {len(test_cases)} test cases")
-        
-        responses = {}
-        
-        for test_case in test_cases:
-            case_id = test_case["id"]
-            query = test_case["query"]
-            context = test_case.get("context", "")
+        try:
+            logger.info(f"Generating system responses to {len(test_cases)} test cases")
             
-            # Generate response
-            response = model_manager.generate_response(query, context)
+            if not test_cases:
+                logger.warning("No test cases provided for response generation")
+                return {}
             
-            # Save response
-            responses[case_id] = {
-                "query": query,
-                "context": context,
-                "response": response
-            }
+            responses = {}
+            failed_cases = []
             
-            logger.debug(f"Generated response for case {case_id}")
-        
-        return responses
+            for test_case in test_cases:
+                try:
+                    case_id = test_case.get("id")
+                    if case_id is None:
+                        logger.warning(f"Test case missing ID: {test_case}")
+                        continue
+                        
+                    query = test_case.get("query", "")
+                    context = test_case.get("context", "")
+                    
+                    if not query:
+                        logger.warning(f"Test case {case_id} has empty query")
+                        continue
+                    
+                    # Generate response
+                    try:
+                        response = model_manager.generate_response(query, context)
+                        if response is None:
+                            logger.warning(f"Model returned None response for case {case_id}")
+                            response = "Error: No response generated"
+                    except Exception as e:
+                        logger.error(f"Error generating response for case {case_id}: {e}")
+                        response = f"Error: Failed to generate response - {str(e)}"
+                        failed_cases.append(case_id)
+                    
+                    # Save response
+                    responses[case_id] = {
+                        "query": query,
+                        "context": context,
+                        "response": response
+                    }
+                    
+                    logger.debug(f"Generated response for case {case_id}")
+                    
+                except Exception as e:
+                    logger.error(f"Error processing test case: {e}")
+                    continue
+            
+            if failed_cases:
+                logger.warning(f"Failed to generate responses for {len(failed_cases)} cases: {failed_cases}")
+            
+            logger.info(f"Successfully generated {len(responses)} responses out of {len(test_cases)} test cases")
+            return responses
+            
+        except Exception as e:
+            logger.error(f"Unexpected error during response generation: {e}")
+            logger.debug("Response generation error details", exc_info=True)
+            return {}
 
     def evaluate_responses(self, model_manager: Any, 
                           system_responses: Dict[int, Dict[str, str]]) -> Dict[str, Any]:
@@ -148,61 +184,134 @@ class ExternalEvaluationManager:
         Returns:
             Dictionary with evaluation results
         """
-        logger.info(f"Evaluating {len(system_responses)} system responses")
-        
-        # Prepare data for evaluation
-        eval_data = []
-        for case_id, data in system_responses.items():
-            eval_data.append({
-                "id": case_id,
-                "query": data["query"],
-                "context": data["context"],
-                "response": data["response"]
-            })
-        
-        # Prepare prompt for evaluation model
-        prompt = self._prepare_evaluation_prompt(eval_data)
-        
-        # Generate evaluation
-        raw_evaluation = model_manager.generate_response(prompt, "")
-        
         try:
-            # Parse response as JSON
-            criteria_scores = json.loads(raw_evaluation)
+            logger.info(f"Evaluating {len(system_responses)} system responses")
             
-            # Check if it contains all criteria
-            for criterion in self.evaluation_criteria:
-                if criterion not in criteria_scores:
-                    criteria_scores[criterion] = self.evaluation_scale["min"]
+            if not system_responses:
+                logger.warning("No system responses provided for evaluation")
+                return {
+                    "criteria_scores": {criterion: self.evaluation_scale["min"] for criterion in self.evaluation_criteria},
+                    "overall_score": self.evaluation_scale["min"],
+                    "timestamp": time.time(),
+                    "error": "No responses to evaluate"
+                }
             
-        except json.JSONDecodeError:
-            logger.error(f"Error parsing JSON response: {raw_evaluation}")
-            # Return default values in case of error
-            criteria_scores = {criterion: self.evaluation_scale["min"] for criterion in self.evaluation_criteria}
+            # Prepare data for evaluation
+            eval_data = []
+            for case_id, data in system_responses.items():
+                try:
+                    eval_data.append({
+                        "id": case_id,
+                        "query": data.get("query", ""),
+                        "context": data.get("context", ""),
+                        "response": data.get("response", "")
+                    })
+                except Exception as e:
+                    logger.error(f"Error preparing evaluation data for case {case_id}: {e}")
+                    continue
+            
+            if not eval_data:
+                logger.error("No valid evaluation data could be prepared")
+                return {
+                    "criteria_scores": {criterion: self.evaluation_scale["min"] for criterion in self.evaluation_criteria},
+                    "overall_score": self.evaluation_scale["min"],
+                    "timestamp": time.time(),
+                    "error": "No valid evaluation data"
+                }
+            
+            # Prepare prompt for evaluation model
+            try:
+                prompt = self._prepare_evaluation_prompt(eval_data)
+            except Exception as e:
+                logger.error(f"Error preparing evaluation prompt: {e}")
+                return {
+                    "criteria_scores": {criterion: self.evaluation_scale["min"] for criterion in self.evaluation_criteria},
+                    "overall_score": self.evaluation_scale["min"],
+                    "timestamp": time.time(),
+                    "error": f"Prompt preparation failed: {str(e)}"
+                }
+            
+            # Generate evaluation
+            try:
+                raw_evaluation = model_manager.generate_response(prompt, "")
+                if not raw_evaluation:
+                    logger.error("Model returned empty evaluation response")
+                    raise ValueError("Empty evaluation response")
+            except Exception as e:
+                logger.error(f"Error generating evaluation response: {e}")
+                return {
+                    "criteria_scores": {criterion: self.evaluation_scale["min"] for criterion in self.evaluation_criteria},
+                    "overall_score": self.evaluation_scale["min"],
+                    "timestamp": time.time(),
+                    "error": f"Evaluation generation failed: {str(e)}"
+                }
+            
+            # Parse and process evaluation response
+            try:
+                # Parse response as JSON
+                criteria_scores = json.loads(raw_evaluation)
+                
+                # Validate and sanitize scores
+                sanitized_scores = {}
+                for criterion in self.evaluation_criteria:
+                    if criterion in criteria_scores:
+                        try:
+                            score = float(criteria_scores[criterion])
+                            # Clamp score to valid range
+                            score = max(self.evaluation_scale["min"], min(self.evaluation_scale["max"], score))
+                            sanitized_scores[criterion] = score
+                        except (ValueError, TypeError):
+                            logger.warning(f"Invalid score for criterion {criterion}: {criteria_scores[criterion]}")
+                            sanitized_scores[criterion] = self.evaluation_scale["min"]
+                    else:
+                        logger.warning(f"Missing criterion in evaluation: {criterion}")
+                        sanitized_scores[criterion] = self.evaluation_scale["min"]
+                
+                criteria_scores = sanitized_scores
+                
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing JSON response: {raw_evaluation[:200]}... Error: {e}")
+                # Return default values in case of error
+                criteria_scores = {criterion: self.evaluation_scale["min"] for criterion in self.evaluation_criteria}
+            except Exception as e:
+                logger.error(f"Unexpected error parsing evaluation response: {e}")
+                criteria_scores = {criterion: self.evaluation_scale["min"] for criterion in self.evaluation_criteria}
         
-        # Calculate average score
-        overall_score = sum(criteria_scores.values()) / len(criteria_scores)
+            # Calculate average score
+            if criteria_scores:
+                overall_score = sum(criteria_scores.values()) / len(criteria_scores)
+            else:
+                overall_score = self.evaluation_scale["min"]
         
-        # Prepare evaluation result
-        evaluation = {
-            "criteria_scores": criteria_scores,
-            "overall_score": overall_score,
-            "timestamp": time.time(),
-            "responses_evaluated": len(system_responses),
-            "raw_evaluation": raw_evaluation
-        }
+            # Prepare evaluation result
+            evaluation = {
+                "criteria_scores": criteria_scores,
+                "overall_score": overall_score,
+                "timestamp": time.time(),
+                "responses_evaluated": len(system_responses),
+                "raw_evaluation": raw_evaluation
+            }
         
-        # Update last evaluation time
-        self.last_evaluation_time = time.time()
-        
-        # Add evaluation to history
-        self.evaluation_history.append(evaluation)
-        
-        # Save history
-        self.save_evaluation_history()
-        
-        logger.info(f"Evaluation completed: {overall_score=}")
-        return evaluation
+            # Update last evaluation time
+            self.last_evaluation_time = time.time()
+            
+            # Add evaluation to history
+            self.evaluation_history.append(evaluation)
+            
+            # Save history
+            self.save_evaluation_history()
+            
+            logger.info(f"Evaluation completed: {overall_score=}")
+            return evaluation
+            
+        except Exception as e:
+            logger.error(f"Error in evaluation process: {e}")
+            return {
+                "criteria_scores": {criterion: self.evaluation_scale["min"] for criterion in self.evaluation_criteria},
+                "overall_score": self.evaluation_scale["min"],
+                "timestamp": time.time(),
+                "error": f"Evaluation failed: {str(e)}"
+            }
 
     def _prepare_evaluation_prompt(self, eval_data: List[Dict[str, Any]]) -> str:
         """Prepares prompt for the evaluation model.

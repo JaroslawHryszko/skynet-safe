@@ -212,62 +212,183 @@ class SelfImprovementManager:
         Returns:
             True if improvements were applied, False otherwise
         """
-        logger.info("Applying successful improvements to the model")
-        
-        applied = False
-        
-        # Review experiments and apply successful ones
-        for experiment in self.experiments:
-            if "evaluation" in experiment and experiment["evaluation"]["success"]:
-                # Apply parameter changes
-                for param_name, param_value in experiment["parameters"].items():
-                    if param_name in model_manager.config:
-                        old_value = model_manager.config[param_name]
-                        model_manager.config[param_name] = param_value
+        try:
+            logger.info("Applying successful improvements to the model")
+            
+            if not self.experiments:
+                logger.debug("No experiments available for improvement application")
+                return False
+            
+            applied = False
+            failed_applications = []
+            
+            # Review experiments and apply successful ones
+            for experiment in self.experiments:
+                try:
+                    if "evaluation" not in experiment:
+                        logger.debug(f"Experiment {experiment.get('id', 'unknown')} has no evaluation")
+                        continue
                         
-                        # Save information about the change
-                        improvement = {
-                            "type": "parameter_change",
-                            "parameter": param_name,
-                            "old_value": old_value,
-                            "new_value": param_value,
-                            "timestamp": time.time(),
-                            "experiment_id": experiment["id"],
-                            "metrics_improvement": experiment["evaluation"]["improvements"]
-                        }
-                        
-                        self.improvement_history.append(improvement)
-                        applied = True
-                        
-                        logger.info(f"Improvement applied: {param_name} = {param_value}")
-        
-        # Save improvement history
-        if applied:
-            self.save_improvement_history()
-        
-        return applied
+                    if not experiment["evaluation"].get("success", False):
+                        logger.debug(f"Experiment {experiment.get('id', 'unknown')} was not successful")
+                        continue
+                    
+                    experiment_id = experiment.get("id", "unknown")
+                    parameters = experiment.get("parameters", {})
+                    
+                    if not parameters:
+                        logger.warning(f"Experiment {experiment_id} has no parameters to apply")
+                        continue
+                    
+                    # Apply parameter changes
+                    for param_name, param_value in parameters.items():
+                        try:
+                            if not hasattr(model_manager, 'config') or model_manager.config is None:
+                                logger.error("Model manager has no config attribute")
+                                failed_applications.append(f"{experiment_id}:{param_name}")
+                                continue
+                                
+                            if param_name not in model_manager.config:
+                                logger.warning(f"Parameter {param_name} not found in model config")
+                                continue
+                            
+                            old_value = model_manager.config[param_name]
+                            model_manager.config[param_name] = param_value
+                            
+                            # Save information about the change
+                            improvement = {
+                                "type": "parameter_change",
+                                "parameter": param_name,
+                                "old_value": old_value,
+                                "new_value": param_value,
+                                "timestamp": time.time(),
+                                "experiment_id": experiment_id,
+                                "metrics_improvement": experiment["evaluation"].get("improvements", {})
+                            }
+                            
+                            self.improvement_history.append(improvement)
+                            applied = True
+                            
+                            logger.info(f"Improvement applied: {param_name} = {param_value} (from {old_value})")
+                            
+                        except Exception as e:
+                            logger.error(f"Error applying parameter {param_name} from experiment {experiment_id}: {e}")
+                            failed_applications.append(f"{experiment_id}:{param_name}")
+                            continue
+                            
+                except Exception as e:
+                    logger.error(f"Error processing experiment {experiment.get('id', 'unknown')}: {e}")
+                    continue
+            
+            if failed_applications:
+                logger.warning(f"Failed to apply {len(failed_applications)} improvements: {failed_applications}")
+            
+            # Save improvement history
+            if applied:
+                try:
+                    self.save_improvement_history()
+                except Exception as e:
+                    logger.error(f"Error saving improvement history: {e}")
+            
+            logger.info(f"Applied {len([h for h in self.improvement_history if h.get('timestamp', 0) > time.time() - 60])} improvements")
+            return applied
+            
+        except Exception as e:
+            logger.error(f"Unexpected error during improvement application: {e}")
+            logger.debug("Improvement application error details", exc_info=True)
+            return False
 
     def save_improvement_history(self) -> None:
         """Saves improvement history to a file."""
-        logger.info(f"Saving improvement history to: {self.history_file}")
-        
         try:
+            logger.info(f"Saving improvement history to: {self.history_file}")
+            
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
+            
+            # Create backup of existing file
+            backup_file = f"{self.history_file}.backup"
+            if os.path.exists(self.history_file):
+                try:
+                    import shutil
+                    shutil.copy2(self.history_file, backup_file)
+                except Exception as e:
+                    logger.warning(f"Could not create backup file: {e}")
+            
+            # Save improvement history
             with open(self.history_file, 'w') as f:
                 json.dump(self.improvement_history, f, indent=2)
+                
+            logger.debug(f"Successfully saved {len(self.improvement_history)} improvement records")
+            
+        except PermissionError as e:
+            logger.error(f"Permission denied saving improvement history: {e}")
+        except OSError as e:
+            logger.error(f"OS error saving improvement history: {e}")
         except Exception as e:
-            logger.error(f"Error saving improvement history: {e}")
+            logger.error(f"Unexpected error saving improvement history: {e}")
+            logger.debug("Save improvement history error details", exc_info=True)
 
     def load_improvement_history(self) -> None:
         """Loads improvement history from a file."""
-        if os.path.exists(self.history_file):
+        try:
+            if not os.path.exists(self.history_file):
+                logger.debug(f"Improvement history file does not exist: {self.history_file}")
+                self.improvement_history = []
+                return
+                
             logger.info(f"Loading improvement history from: {self.history_file}")
             
-            try:
-                with open(self.history_file, 'r') as f:
-                    self.improvement_history = json.load(f)
-            except Exception as e:
-                logger.error(f"Error loading improvement history: {e}")
+            # Check if file is readable
+            if not os.access(self.history_file, os.R_OK):
+                logger.error(f"No read permission for improvement history file: {self.history_file}")
                 self.improvement_history = []
+                return
+            
+            # Check file size
+            file_size = os.path.getsize(self.history_file)
+            if file_size == 0:
+                logger.warning("Improvement history file is empty")
+                self.improvement_history = []
+                return
+            
+            with open(self.history_file, 'r') as f:
+                data = json.load(f)
+                
+            # Validate loaded data
+            if not isinstance(data, list):
+                logger.error(f"Invalid improvement history format - expected list, got {type(data)}")
+                self.improvement_history = []
+                return
+                
+            self.improvement_history = data
+            logger.info(f"Successfully loaded {len(self.improvement_history)} improvement records")
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error loading improvement history: {e}")
+            # Try to load backup file
+            backup_file = f"{self.history_file}.backup"
+            if os.path.exists(backup_file):
+                try:
+                    logger.info("Attempting to load from backup file")
+                    with open(backup_file, 'r') as f:
+                        self.improvement_history = json.load(f)
+                    logger.info("Successfully loaded from backup file")
+                except Exception as backup_e:
+                    logger.error(f"Error loading from backup file: {backup_e}")
+                    self.improvement_history = []
+            else:
+                self.improvement_history = []
+        except PermissionError as e:
+            logger.error(f"Permission denied loading improvement history: {e}")
+            self.improvement_history = []
+        except OSError as e:
+            logger.error(f"OS error loading improvement history: {e}")
+            self.improvement_history = []
+        except Exception as e:
+            logger.error(f"Unexpected error loading improvement history: {e}")
+            logger.debug("Load improvement history error details", exc_info=True)
+            self.improvement_history = []
 
     def generate_improvement_report(self) -> str:
         """Generates a report from the self-improvement process.

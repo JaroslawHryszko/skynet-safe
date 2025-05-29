@@ -289,49 +289,84 @@ header h1 {
     text-align: right;
 }
 
-/* System Issues Styles */
-.no-issues {
+/* Recent Tasks Styles */
+.no-tasks {
     text-align: center;
-    color: var(--success-color);
-    font-weight: 600;
+    color: var(--text-muted);
+    font-weight: 500;
     padding: 20px;
 }
 
-.issue-item {
+.task-item {
     display: flex;
     align-items: flex-start;
     gap: 12px;
     padding: 12px;
     border-radius: var(--border-radius);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
 }
 
-.issue-item.error {
-    background: rgba(231, 76, 60, 0.1);
-    border-left: 4px solid var(--danger-color);
+.task-item:hover {
+    background: rgba(52, 152, 219, 0.05);
 }
 
-.issue-item.warning {
+.task-item.completed {
+    background: rgba(39, 174, 96, 0.1);
+    border-left: 4px solid var(--success-color);
+}
+
+.task-item.running {
+    background: rgba(52, 152, 219, 0.1);
+    border-left: 4px solid var(--accent-color);
+}
+
+.task-item.pending {
     background: rgba(243, 156, 18, 0.1);
     border-left: 4px solid var(--warning-color);
 }
 
-.issue-icon {
-    font-size: 1.2rem;
+.task-item.error {
+    background: rgba(231, 76, 60, 0.1);
+    border-left: 4px solid var(--danger-color);
 }
 
-.issue-content {
+.task-icon {
+    font-size: 1.2rem;
+    margin-top: 2px;
+}
+
+.task-content {
     flex: 1;
 }
 
-.issue-message {
+.task-description {
     font-weight: 500;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    line-height: 1.4;
 }
 
-.issue-time {
+.task-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.task-status {
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    background: rgba(52, 152, 219, 0.2);
+    color: var(--accent-color);
+}
+
+.task-time {
     font-size: 0.8rem;
     color: var(--text-muted);
+    font-family: monospace;
 }
 
 /* Recent Activities Timeline */
@@ -345,10 +380,25 @@ header h1 {
     gap: 15px;
     padding: 12px 0;
     border-bottom: 1px solid var(--border-color);
+    transition: all 0.2s ease;
 }
 
 .timeline-item:last-child {
     border-bottom: none;
+}
+
+.timeline-item.clickable-log {
+    cursor: pointer;
+    padding: 12px;
+    margin: 0 -12px;
+    border-radius: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.timeline-item.clickable-log:hover {
+    background: rgba(52, 152, 219, 0.05);
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .timeline-time {
@@ -361,6 +411,42 @@ header h1 {
 .timeline-content {
     flex: 1;
     font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.log-summary {
+    flex: 1;
+}
+
+.log-level {
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 3px 6px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    margin-left: 10px;
+}
+
+.log-level.level-info {
+    background: rgba(52, 152, 219, 0.2);
+    color: var(--accent-color);
+}
+
+.log-level.level-warning {
+    background: rgba(243, 156, 18, 0.2);
+    color: var(--warning-color);
+}
+
+.log-level.level-error {
+    background: rgba(231, 76, 60, 0.2);
+    color: var(--danger-color);
+}
+
+.log-level.level-debug {
+    background: rgba(127, 140, 141, 0.2);
+    color: var(--text-muted);
 }
 
 /* System Stats */

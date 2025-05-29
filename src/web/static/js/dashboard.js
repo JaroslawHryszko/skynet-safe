@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateSystemStatus(data.system);
                 updatePersonaState(data.persona);
                 updatePersonalityTraits(data.persona.traits);
-                updateSystemIssues(data.issues);
+                updateRecentTasks(data.tasks);
                 updateRecentActivities(data.recent_activities);
                 updateTimestamp();
             })
@@ -192,32 +192,36 @@ document.addEventListener('DOMContentLoaded', function() {
         traitsList.innerHTML = traitsHTML;
     }
     
-    function updateSystemIssues(issues) {
-        if (!issues || issues.length === 0) {
-            issuesList.innerHTML = '<div class="no-issues">✅ No issues detected</div>';
+    function updateRecentTasks(tasks) {
+        if (!tasks || tasks.length === 0) {
+            issuesList.innerHTML = '<div class="no-tasks">📝 No recent tasks</div>';
             return;
         }
         
-        let issuesHTML = '';
-        issues.forEach(issue => {
+        let tasksHTML = '';
+        tasks.forEach(task => {
             const iconMap = {
-                'error': '❌',
-                'warning': '⚠️',
-                'info': 'ℹ️'
+                'completed': '✅',
+                'running': '🔄',
+                'pending': '⏳',
+                'error': '❌'
             };
             
-            issuesHTML += `
-                <div class="issue-item ${issue.type}">
-                    <span class="issue-icon">${iconMap[issue.type] || 'ℹ️'}</span>
-                    <div class="issue-content">
-                        <div class="issue-message">${issue.message}</div>
-                        <div class="issue-time">${formatTime(issue.timestamp)}</div>
+            tasksHTML += `
+                <div class="task-item ${task.type}">
+                    <span class="task-icon">${iconMap[task.type] || '📝'}</span>
+                    <div class="task-content">
+                        <div class="task-description">${task.description}</div>
+                        <div class="task-meta">
+                            <span class="task-status">${task.status}</span>
+                            <span class="task-time">${task.timestamp}</span>
+                        </div>
                     </div>
                 </div>
             `;
         });
         
-        issuesList.innerHTML = issuesHTML;
+        issuesList.innerHTML = tasksHTML;
     }
     
     function updateRecentActivities(activities) {
@@ -229,14 +233,29 @@ document.addEventListener('DOMContentLoaded', function() {
         let activitiesHTML = '';
         activities.forEach(activity => {
             // Use time_display if available, otherwise format timestamp
-            const timeDisplay = activity.time_display || formatTime(activity.timestamp);
+            const timeDisplay = activity.time_display || formatTime(activity.timestamp) || 'Unknown';
+            const activityText = activity.summary || activity.activity || 'Unknown activity';
             
-            activitiesHTML += `
-                <div class="timeline-item">
-                    <div class="timeline-time">${timeDisplay}</div>
-                    <div class="timeline-content">${activity.activity}</div>
-                </div>
-            `;
+            // Check if this is a log entry with ID (clickable)
+            if (activity.id) {
+                activitiesHTML += `
+                    <div class="timeline-item clickable-log" onclick="openLogDetail('${activity.id}')" title="Click to view full log details">
+                        <div class="timeline-time">${timeDisplay}</div>
+                        <div class="timeline-content">
+                            <span class="log-summary">${activityText}</span>
+                            <span class="log-level level-${(activity.level || 'info').toLowerCase()}">${activity.level || 'INFO'}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Regular activity (non-clickable)
+                activitiesHTML += `
+                    <div class="timeline-item">
+                        <div class="timeline-time">${timeDisplay}</div>
+                        <div class="timeline-content">${activityText}</div>
+                    </div>
+                `;
+            }
         });
         
         activitiesTimeline.innerHTML = activitiesHTML;
@@ -250,11 +269,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function formatTime(timestamp) {
+        if (!timestamp) {
+            return 'Unknown';
+        }
         try {
             const date = new Date(timestamp);
+            if (isNaN(date.getTime())) {
+                return 'Invalid Date';
+            }
             return date.toLocaleTimeString();
         } catch (e) {
-            return timestamp;
+            return 'Invalid Date';
         }
     }
     
@@ -265,4 +290,10 @@ document.addEventListener('DOMContentLoaded', function() {
         activityDescription.textContent = 'Please check if SKYNET-SAFE is running';
         activityIcon.textContent = '⚠️';
     }
+    
+    // Global function for opening log details
+    window.openLogDetail = function(logId) {
+        // Open log detail page in the same window
+        window.location.href = `/log/${logId}`;
+    };
 });

@@ -2,6 +2,7 @@ from flask import Flask, render_template, jsonify
 import os
 import re
 import time
+import math
 from datetime import datetime
 import json
 from flask_cors import CORS
@@ -13,11 +14,9 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-LOG_DIR = os.getenv("LOG_DIR", "/opt/skynet-safe/logs")
+LOG_DIR = os.getenv("LOG_DIR", "./logs")
 INTERACTION_LOG = os.path.join(LOG_DIR, "llm_interactions.log")
 SYSTEM_LOG = os.path.join(LOG_DIR, "skynet.log")
-STDERR_LOG = os.path.join(LOG_DIR, "stderr.log")
-STDOUT_LOG = os.path.join(LOG_DIR, "stdout.log")
 AI_NAME = os.getenv("AI_NAME", "AI")
 
 # Track start time for uptime calculation
@@ -175,177 +174,179 @@ def parse_interaction_log():
     return interactions[-5:]  # Return only the 5 most recent interactions
 
 def parse_recent_activities():
-    """Parse interaction, system, stdout and stderr logs for recent activities with clean formatting"""
+    """Parse logs for the six most recent activities with proper JSON parsing and clickable entries"""
     activities = []
     
-    # Parse interaction log for user queries
+    # Parse llm_interactions.log for interaction entries first
     if os.path.exists(INTERACTION_LOG):
         try:
             with open(INTERACTION_LOG, 'r') as f:
-                lines = f.readlines()[-50:]  # Check last 50 lines
+                lines = f.readlines()[-50:]  # Check last 50 lines for interaction data
                 
                 for line in lines:
                     try:
-                        # Try to parse as JSON
+                        # Try to parse JSON log entry
                         if '{' in line and '}' in line:
                             json_part = line[line.find('{'):line.rfind('}')+1]
-                            interaction_data = json.loads(json_part)
+                            log_data = json.loads(json_part)
                             
-                            # Extract relevant fields
-                            if 'timestamp' in interaction_data and 'query' in interaction_data:
-                                timestamp_str = interaction_data.get('timestamp', '')
-                                query = interaction_data.get('query', '').strip()
+                            if 'timestamp' in log_data:
+                                timestamp_str = log_data['timestamp']
                                 
-                                if query and timestamp_str:
-                                    # Format timestamp to HH:MM
-                                    try:
-                                        if 'T' in timestamp_str:
-                                            # ISO format
-                                            dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                                # Parse ISO timestamp
+                                try:
+                                    if 'T' in timestamp_str:
+                                        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                                    else:
+                                        dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                                    
+                                    time_str = dt.strftime('%H:%M')
+                                    
+                                    # Create log ID for clickable entry
+                                    log_id = f"{dt.strftime('%Y%m%d_%H%M%S')}_{dt.microsecond//1000:03d}"
+                                    
+                                    # Extract query/prompt for summary
+                                    summary = ""
+                                    if 'query' in log_data:
+                                        query = log_data['query']
+                                        if len(query) > 60:
+                                            summary = f"Query: {query[:57]}..."
                                         else:
-                                            # Try parsing as standard datetime
-                                            dt = datetime.strptime(timestamp_str.split('.')[0], '%Y-%m-%d %H:%M:%S')
-                                        
-                                        time_str = dt.strftime('%H:%M')
-                                        
-                                        # Anonymize user queries for privacy
-                                        activities.append({
-                                            "timestamp": timestamp_str,
-                                            "time_display": time_str,
-                                            "activity": "Query",
-                                            "type": "interaction",
-                                            "sort_time": dt
-                                        })
-                                        
-                                    except Exception as e:
-                                        print(f"Error parsing timestamp {timestamp_str}: {e}")
-                                        continue
-                                        
+                                            summary = f"Query: {query}"
+                                    elif 'prompt' in log_data:
+                                        prompt = log_data['prompt']
+                                        if len(prompt) > 60:
+                                            summary = f"Prompt: {prompt[:57]}..."
+                                        else:
+                                            summary = f"Prompt: {prompt}"
+                                    else:
+                                        summary = "LLM Interaction"
+                                    
+                                    # Determine log level
+                                    level = log_data.get('level', 'INFO')
+                                    
+                                    activities.append({
+                                        "id": log_id,  # This makes it clickable
+                                        "timestamp": timestamp_str,
+                                        "time_display": time_str,
+                                        "summary": summary,
+                                        "activity": summary,  # For backward compatibility
+                                        "level": level,
+                                        "type": "interaction",
+                                        "sort_time": dt
+                                    })
+                                    
+                                except Exception as e:
+                                    print(f"Error parsing JSON timestamp {timestamp_str}: {e}")
+                                    continue
                     except json.JSONDecodeError:
+                        # Try regex parsing for non-JSON log entries
+                        match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?)\s+.*?(?:INFO|ERROR|WARNING|DEBUG)\s+-\s+(.*)', line)
+                        if match:
+                            timestamp_str = match.group(1)
+                            message = match.group(2).strip()
+                            
+                            try:
+                                if ',' in timestamp_str:
+                                    dt = datetime.strptime(timestamp_str.split(',')[0], '%Y-%m-%d %H:%M:%S')
+                                    milliseconds = timestamp_str.split(',')[1][:3]
+                                else:
+                                    dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                                    milliseconds = "000"
+                                
+                                time_str = dt.strftime('%H:%M')
+                                log_id = f"{dt.strftime('%Y%m%d_%H%M%S')}_{milliseconds}"
+                                
+                                # Extract level from message if possible
+                                level_match = re.search(r'(INFO|ERROR|WARNING|DEBUG)', line)
+                                level = level_match.group(1) if level_match else 'INFO'
+                                
+                                display_message = message
+                                if len(display_message) > 60:
+                                    display_message = display_message[:57] + '...'
+                                
+                                activities.append({
+                                    "id": log_id,  # This makes it clickable
+                                    "timestamp": timestamp_str,
+                                    "time_display": time_str,
+                                    "summary": display_message,
+                                    "activity": display_message,
+                                    "level": level,
+                                    "type": "interaction",
+                                    "sort_time": dt
+                                })
+                            except Exception as e:
+                                print(f"Error parsing regex timestamp {timestamp_str}: {e}")
+                                continue
                         continue
-                        
+                                
         except Exception as e:
             print(f"Error parsing interaction log for activities: {e}")
     
-    # Parse system log for system activities
+    # Parse skynet.log for system activities (non-clickable)
     if os.path.exists(SYSTEM_LOG):
         try:
             with open(SYSTEM_LOG, 'r') as f:
-                lines = f.readlines()[-50:]  # Check last 50 lines
+                lines = f.readlines()[-50:]  # Check last 50 lines for system data
                 
                 for line in lines:
-                    # Extract timestamp and message
-                    match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?)\s+.*?INFO\s+-\s+(.*)', line)
+                    # Extract timestamp and message - support multiple log formats
+                    match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?)\s+.*?(?:INFO|ERROR|WARNING|DEBUG)\s+-\s+(.*)', line)
                     if not match:
-                        match = re.search(r'\[(.*?)\].*?INFO\s+-\s+(.*)', line)
+                        match = re.search(r'\[(.*?)\].*?(?:INFO|ERROR|WARNING|DEBUG)\s+-\s+(.*)', line)
                     
                     if match:
                         timestamp_str = match.group(1)
-                        message = match.group(2)
+                        message = match.group(2).strip()
                         
-                        # Filter for important system activities
-                        important_keywords = ["Performing periodic", "Generating initiation", "New discovery", 
-                                            "Persona updated", "Performing reflection", "External evaluation",
-                                            "started", "completed"]
+                        # Skip empty messages
+                        if not message:
+                            continue
                         
-                        if any(keyword in message for keyword in important_keywords):
-                            try:
-                                # Parse timestamp
-                                if ',' in timestamp_str:
-                                    dt = datetime.strptime(timestamp_str.split(',')[0], '%Y-%m-%d %H:%M:%S')
-                                else:
-                                    dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
-                                
-                                time_str = dt.strftime('%H:%M')
-                                
-                                # Shorten long system messages
-                                if len(message) > 40:
-                                    message = message[:40] + '...'
-                                
-                                activities.append({
-                                    "timestamp": timestamp_str,
-                                    "time_display": time_str,
-                                    "activity": message,
-                                    "type": "system",
-                                    "sort_time": dt
-                                })
-                                
-                            except Exception as e:
-                                print(f"Error parsing system timestamp {timestamp_str}: {e}")
-                                continue
+                        try:
+                            # Parse timestamp
+                            if ',' in timestamp_str:
+                                dt = datetime.strptime(timestamp_str.split(',')[0], '%Y-%m-%d %H:%M:%S')
+                            else:
+                                dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                            
+                            time_str = dt.strftime('%H:%M')
+                            
+                            # Extract level from line
+                            level_match = re.search(r'(INFO|ERROR|WARNING|DEBUG)', line)
+                            level = level_match.group(1) if level_match else 'INFO'
+                            
+                            # Determine activity type based on message content
+                            activity_type = "system"
+                            if any(keyword in message.lower() for keyword in ["query", "user", "telegram", "signal"]):
+                                activity_type = "interaction"
+                            elif any(keyword in message.lower() for keyword in ["error", "exception", "failed"]):
+                                activity_type = "error"
+                            elif any(keyword in message.lower() for keyword in ["warning", "warn"]):
+                                activity_type = "warning"
+                            
+                            # Shorten long messages for display
+                            display_message = message
+                            if len(display_message) > 60:
+                                display_message = display_message[:57] + '...'
+                            
+                            # No ID for system log entries (non-clickable)
+                            activities.append({
+                                "timestamp": timestamp_str,
+                                "time_display": time_str,
+                                "summary": display_message,
+                                "activity": display_message,
+                                "level": level,
+                                "type": activity_type,
+                                "sort_time": dt
+                            })
+                            
+                        except Exception as e:
+                            print(f"Error parsing timestamp {timestamp_str}: {e}")
+                            continue
                                 
         except Exception as e:
             print(f"Error parsing system log for activities: {e}")
-    
-    # Parse stdout log for output activities
-    if os.path.exists(STDOUT_LOG):
-        try:
-            with open(STDOUT_LOG, 'r') as f:
-                lines = f.readlines()[-20:]  # Check last 20 lines
-                
-                for line in lines:
-                    line = line.strip()
-                    if line and not line.startswith('#'):  # Skip empty lines and comments
-                        # Extract timestamp if present
-                        timestamp_match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})', line)
-                        
-                        if timestamp_match:
-                            timestamp_str = timestamp_match.group(1)
-                            try:
-                                dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
-                                time_str = dt.strftime('%H:%M')
-                                
-                                # Look for relevant stdout activities
-                                if any(keyword in line.lower() for keyword in ['started', 'loaded', 'initialized', 'ready']):
-                                    activities.append({
-                                        "timestamp": timestamp_str,
-                                        "time_display": time_str,
-                                        "activity": "System Output",
-                                        "type": "stdout",
-                                        "sort_time": dt
-                                    })
-                                    
-                            except Exception as e:
-                                print(f"Error parsing stdout timestamp {timestamp_str}: {e}")
-                                continue
-                                
-        except Exception as e:
-            print(f"Error parsing stdout log for activities: {e}")
-    
-    # Parse stderr log for error activities
-    if os.path.exists(STDERR_LOG):
-        try:
-            with open(STDERR_LOG, 'r') as f:
-                lines = f.readlines()[-20:]  # Check last 20 lines
-                
-                for line in lines:
-                    line = line.strip()
-                    if line and not line.startswith('#'):  # Skip empty lines and comments
-                        # Extract timestamp if present
-                        timestamp_match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})', line)
-                        
-                        if timestamp_match:
-                            timestamp_str = timestamp_match.group(1)
-                            try:
-                                dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
-                                time_str = dt.strftime('%H:%M')
-                                
-                                # Look for relevant stderr activities
-                                if any(keyword in line.lower() for keyword in ['error', 'warning', 'exception']):
-                                    activities.append({
-                                        "timestamp": timestamp_str,
-                                        "time_display": time_str,
-                                        "activity": "System Error",
-                                        "type": "stderr",
-                                        "sort_time": dt
-                                    })
-                                    
-                            except Exception as e:
-                                print(f"Error parsing stderr timestamp {timestamp_str}: {e}")
-                                continue
-                                
-        except Exception as e:
-            print(f"Error parsing stderr log for activities: {e}")
     
     # Sort by timestamp and return last 6
     try:
@@ -358,6 +359,114 @@ def parse_recent_activities():
         activity.pop('sort_time', None)
     
     return activities[:6]
+
+def parse_log_entry(log_line):
+    """Parse a single log entry and extract structured information"""
+    # Parse log line format: TIMESTAMP - LEVEL - MESSAGE
+    match = re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d+) - ([^-]+) - (.+)', log_line.strip())
+    if not match:
+        return None
+        
+    timestamp_str, milliseconds, level, message = match.groups()
+    timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+    
+    # Create a unique ID for this log entry
+    log_id = f"{timestamp.strftime('%Y%m%d_%H%M%S')}_{milliseconds}"
+    
+    # Extract summary from message (first 80 characters or until first newline)
+    summary = message.split('\n')[0]
+    if len(summary) > 80:
+        summary = summary[:77] + '...'
+    
+    return {
+        'id': log_id,
+        'timestamp': timestamp,
+        'time_str': timestamp.strftime('%H:%M:%S'),
+        'level': level.strip(),
+        'summary': summary,
+        'full_message': message
+    }
+
+def get_recent_interactions():
+    """Get recent LLM interactions from logs"""
+    interactions = []
+    
+    if not os.path.exists(INTERACTION_LOG):
+        return interactions
+    
+    try:
+        with open(INTERACTION_LOG, 'r') as f:
+            lines = f.readlines()[-20:]  # Get last 20 interactions
+            
+        for line in lines:
+            parsed = parse_log_entry(line)
+            if parsed:
+                interactions.append({
+                    'id': parsed['id'],
+                    'time': parsed['time_str'],
+                    'summary': parsed['summary'],
+                    'level': parsed['level']
+                })
+    except Exception as e:
+        print(f"Error reading interaction log: {e}")
+    
+    return list(reversed(interactions))
+
+def get_log_entry_by_id(log_id):
+    """Get detailed log entry by ID - supports both JSON and regular log entries"""
+    if not os.path.exists(INTERACTION_LOG):
+        return None
+        
+    try:
+        with open(INTERACTION_LOG, 'r') as f:
+            lines = f.readlines()
+            
+        for line in lines:
+            try:
+                # First try JSON parsing
+                if '{' in line and '}' in line:
+                    json_part = line[line.find('{'):line.rfind('}')+1]
+                    log_data = json.loads(json_part)
+                    
+                    if 'timestamp' in log_data:
+                        timestamp_str = log_data['timestamp']
+                        
+                        # Parse ISO timestamp
+                        try:
+                            if 'T' in timestamp_str:
+                                dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                            else:
+                                dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                            
+                            # Create log ID
+                            entry_log_id = f"{dt.strftime('%Y%m%d_%H%M%S')}_{dt.microsecond//1000:03d}"
+                            
+                            if entry_log_id == log_id:
+                                # Format full message from JSON data
+                                full_message = json.dumps(log_data, indent=2, ensure_ascii=False)
+                                
+                                return {
+                                    'id': entry_log_id,
+                                    'timestamp': dt,
+                                    'time_str': dt.strftime('%H:%M:%S'),
+                                    'level': log_data.get('level', 'INFO'),
+                                    'summary': f"LLM Interaction: {log_data.get('query', log_data.get('prompt', 'N/A'))[:60]}...",
+                                    'full_message': full_message
+                                }
+                        except Exception as e:
+                            print(f"Error parsing JSON timestamp for ID matching: {e}")
+                            continue
+            except json.JSONDecodeError:
+                # Fallback to regex parsing for regular log entries
+                parsed = parse_log_entry(line)
+                if parsed and parsed['id'] == log_id:
+                    return parsed
+                continue
+                    
+    except Exception as e:
+        print(f"Error reading log entry: {e}")
+    
+    return None
 
 @app.route('/')
 def index():
@@ -396,38 +505,58 @@ def get_persona_state():
         print(f"Error reading persona state: {e}")
     return {}
 
+def get_current_task():
+    """Read current task from current_task.tmp file"""
+    current_task_file = os.path.join(LOG_DIR, "current_task.tmp")
+    try:
+        if os.path.exists(current_task_file):
+            with open(current_task_file, 'r', encoding='utf-8') as f:
+                task = f.read().strip()
+                if task:
+                    return task
+    except Exception as e:
+        print(f"Error reading current task file: {e}")
+    return None
+
 def get_system_state():
     """Parse logs to determine current system state"""
     try:
-        with open(SYSTEM_LOG, 'r') as f:
-            lines = f.readlines()[-20:]  # Check last 20 lines
-            
-        current_activity = "Idle"
         loop_iterations = 0
         last_action_time = None
         
-        for line in reversed(lines):
-            if "Performing periodic system tasks" in line:
-                current_activity = "Periodic Tasks"
-                break
-            elif "Generating initiation message" in line:
-                current_activity = "Initiating Conversation"
-                break
-            elif "New discovery:" in line:
-                current_activity = "Internet Exploration"
-                break
-            elif "Persona updated" in line:
-                current_activity = "Persona Update"
-                break
-            elif "Performing reflection" in line:
-                current_activity = "Self-Reflection"
-                break
-            elif "External evaluation" in line:
-                current_activity = "External Evaluation"
-                break
-            elif "processing" in line.lower() or "received" in line.lower():
-                current_activity = "Processing Messages"
-                break
+        # First try to get current task from file
+        current_task = get_current_task()
+        if current_task:
+            current_activity = current_task
+        else:
+            # Fallback to log parsing
+            with open(SYSTEM_LOG, 'r') as f:
+                lines = f.readlines()[-20:]  # Check last 20 lines
+                
+            current_activity = "Idle"
+            
+            for line in reversed(lines):
+                if "Performing periodic system tasks" in line:
+                    current_activity = "Periodic Tasks"
+                    break
+                elif "Generating initiation message" in line:
+                    current_activity = "Initiating Conversation"
+                    break
+                elif "New discovery:" in line:
+                    current_activity = "Internet Exploration"
+                    break
+                elif "Persona updated" in line:
+                    current_activity = "Persona Update"
+                    break
+                elif "Performing reflection" in line:
+                    current_activity = "Self-Reflection"
+                    break
+                elif "External evaluation" in line:
+                    current_activity = "External Evaluation"
+                    break
+                elif "processing" in line.lower() or "received" in line.lower():
+                    current_activity = "Processing Messages"
+                    break
                 
         return {
             "current_activity": current_activity,
@@ -438,88 +567,90 @@ def get_system_state():
         print(f"Error getting system state: {e}")
         return {"current_activity": "Unknown", "loop_iterations": 0}
 
-def get_system_issues():
-    """Check for system issues from logs"""
-    issues = []
+def get_recent_tasks():
+    """Get recent completed tasks from tasks.log file - only showing completed tasks with time only"""
+    tasks = []
+    tasks_file = os.path.join(LOG_DIR, "tasks.log")
     
-    # Check main system log
     try:
-        if os.path.exists(SYSTEM_LOG):
-            with open(SYSTEM_LOG, 'r') as f:
-                lines = f.readlines()[-50:]
+        if os.path.exists(tasks_file):
+            with open(tasks_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()[-50:]  # Check more lines to find completed tasks
                 
-            for line in lines:
-                if "ERROR" in line:
-                    # Extract error message
-                    error_match = re.search(r'ERROR\s+-\s+(.*)', line)
-                    if error_match:
-                        issues.append({
-                            "type": "error",
-                            "message": error_match.group(1),
-                            "timestamp": datetime.now().isoformat(),
-                            "source": "system"
-                        })
-                elif "WARNING" in line:
-                    warning_match = re.search(r'WARNING\s+-\s+(.*)', line)
-                    if warning_match:
-                        issues.append({
-                            "type": "warning", 
-                            "message": warning_match.group(1),
-                            "timestamp": datetime.now().isoformat(),
-                            "source": "system"
-                        })
-    except Exception as e:
-        issues.append({
-            "type": "error",
-            "message": f"Could not read system logs: {e}",
-            "timestamp": datetime.now().isoformat(),
-            "source": "system"
-        })
-    
-    # Check stderr log for errors
-    try:
-        if os.path.exists(STDERR_LOG):
-            with open(STDERR_LOG, 'r') as f:
-                lines = f.readlines()[-30:]
-                
+            completed_tasks = []
+            
             for line in lines:
                 line = line.strip()
-                if line and not line.startswith('#'):  # Skip empty lines and comments
-                    # Extract timestamp if present
-                    timestamp_match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})', line)
-                    timestamp = timestamp_match.group(1) if timestamp_match else datetime.now().isoformat()
+                if line:
+                    # Parse task line format - handle both old and new formats
+                    # Old format: TIMESTAMP - STATUS - TASK_DESCRIPTION
+                    # New format: ISO_TIMESTAMP - STATUS: TASK_DESCRIPTION
                     
-                    # Common error patterns in stderr
-                    if any(keyword in line.lower() for keyword in ['error', 'exception', 'traceback', 'failed', 'critical']):
-                        issues.append({
-                            "type": "error",
-                            "message": line[:100] + "..." if len(line) > 100 else line,
-                            "timestamp": timestamp,
-                            "source": "stderr"
-                        })
-                    elif any(keyword in line.lower() for keyword in ['warning', 'warn', 'deprecated']):
-                        issues.append({
-                            "type": "warning",
-                            "message": line[:100] + "..." if len(line) > 100 else line,
-                            "timestamp": timestamp,
-                            "source": "stderr"
-                        })
+                    # Try new ISO format first
+                    iso_match = re.match(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+) - ([^:]+): (.+)', line)
+                    if iso_match:
+                        timestamp_str, status, description = iso_match.groups()
+                        
+                        # Only include completed tasks
+                        if status.strip().lower() in ["completed", "done", "finished"]:
+                            try:
+                                # Parse ISO timestamp
+                                timestamp = datetime.fromisoformat(timestamp_str.replace('T', ' ').split('.')[0])
+                                
+                                completed_tasks.append({
+                                    "status": status.strip(),
+                                    "description": description.strip(),
+                                    "timestamp": timestamp.strftime('%H:%M'),  # Only show time, not seconds
+                                    "type": "completed",
+                                    "full_timestamp": timestamp_str,
+                                    "sort_time": timestamp  # For sorting
+                                })
+                            except Exception as e:
+                                print(f"Error parsing ISO task timestamp {timestamp_str}: {e}")
+                                continue
+                    else:
+                        # Try old format
+                        old_match = re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - ([^-]+) - (.+)', line)
+                        if old_match:
+                            timestamp_str, status, description = old_match.groups()
+                            
+                            # Only include completed tasks
+                            if status.strip().lower() in ["completed", "done", "finished"]:
+                                try:
+                                    timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                                    
+                                    completed_tasks.append({
+                                        "status": status.strip(),
+                                        "description": description.strip(),
+                                        "timestamp": timestamp.strftime('%H:%M'),  # Only show time, not seconds
+                                        "type": "completed",
+                                        "full_timestamp": timestamp_str,
+                                        "sort_time": timestamp  # For sorting
+                                    })
+                                except Exception as e:
+                                    print(f"Error parsing old task timestamp {timestamp_str}: {e}")
+                                    continue
+            
+            # Sort by timestamp and take the most recent 6 completed tasks
+            completed_tasks.sort(key=lambda x: x.get('sort_time', datetime.min), reverse=True)
+            tasks = completed_tasks[:6]
+            
+            # Remove sort_time before returning
+            for task in tasks:
+                task.pop('sort_time', None)
+                
     except Exception as e:
-        issues.append({
-            "type": "error",
-            "message": f"Could not read stderr logs: {e}",
-            "timestamp": datetime.now().isoformat(),
-            "source": "stderr"
-        })
+        print(f"Error reading tasks file: {e}")
+        # Don't add error tasks to the list - just return empty if there's an issue
         
-    return issues[-10:]  # Return last 10 issues
+    return tasks
 
 @app.route('/api/dashboard')
 def get_dashboard_data():
     """API endpoint for real-time dashboard data"""
     persona_state = get_persona_state()
     system_state = get_system_state()
-    issues = get_system_issues()
+    tasks = get_recent_tasks()
     
     # Get AI name from persona state, fallback to environment variable
     ai_display_name = persona_state.get("name", AI_NAME)
@@ -543,7 +674,7 @@ def get_dashboard_data():
             "metacognition": persona_state.get("self_perception", {}).get("metacognition_depth", 0),  # Absolute value
             "show_absolute_values": True  # Flag to show absolute values instead of percentages for model metrics
         },
-        "issues": issues,
+        "tasks": tasks,
         "recent_activities": parse_recent_activities()
     })
 
@@ -592,12 +723,34 @@ def get_status():
         "ai_name": AI_NAME
     })
 
+@app.route('/log/<log_id>')
+def show_log_entry(log_id):
+    """Show detailed view of a specific log entry"""
+    log_entry = get_log_entry_by_id(log_id)
+    if not log_entry:
+        return "Log entry not found", 404
+        
+    return render_template('log_detail.html', 
+                         log_entry=log_entry,
+                         ai_name=AI_NAME)
+
+@app.route('/api/log/<log_id>')
+def get_log_entry_api(log_id):
+    """Get detailed log entry as JSON"""
+    log_entry = get_log_entry_by_id(log_id)
+    if not log_entry:
+        return jsonify({"error": "Log entry not found"}), 404
+        
+    return jsonify(log_entry)
+
 if __name__ == '__main__':
     # Create templates directory if it doesn't exist
     os.makedirs(os.path.join(os.path.dirname(__file__), 'templates'), exist_ok=True)
     
     # Import config here to avoid circular imports
-    from src.config import config
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from config import config
     
     # Get host and port from config
     host = config.WEB_INTERFACE.get("host", "0.0.0.0")

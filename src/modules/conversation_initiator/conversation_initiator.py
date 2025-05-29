@@ -452,31 +452,78 @@ class ConversationInitiator:
         Returns:
             True if the conversation was initiated, False otherwise
         """
-        # Check if we should initiate a conversation
-        if not self.should_initiate_conversation():
+        try:
+            # Check if we should initiate a conversation
+            if not self.should_initiate_conversation():
+                logger.debug("Conversation initiation conditions not met")
+                return False
+            
+            if not recipients:
+                logger.warning("No recipients provided for conversation initiation")
+                return False
+            
+            # Select a topic
+            try:
+                topic = self.get_topic_for_initiation(discoveries)
+                if not topic:
+                    logger.warning("No suitable topic found for conversation initiation")
+                    return False
+            except Exception as e:
+                logger.error(f"Error selecting topic for initiation: {e}")
+                return False
+            
+            # Track the selected topic to avoid repetition
+            try:
+                self._track_selected_topic(topic)
+            except Exception as e:
+                logger.error(f"Error tracking selected topic: {e}")
+            
+            # Generate a message
+            try:
+                message = self.generate_initiation_message(model_manager, topic)
+                if not message:
+                    logger.warning("Failed to generate initiation message")
+                    return False
+            except Exception as e:
+                logger.error(f"Error generating initiation message: {e}")
+                return False
+            
+            # Send the message to all recipients
+            success = False
+            failed_recipients = []
+            
+            for recipient in recipients:
+                try:
+                    logger.info(f"Initiating conversation with {recipient} on topic: {topic.get('topic', 'Unknown') if isinstance(topic, dict) else topic}")
+                    # Send the message through all available communication channels
+                    result = communication_interface.send_message(recipient, message)
+                    if result:
+                        success = True
+                        logger.debug(f"Successfully sent message to {recipient}")
+                    else:
+                        failed_recipients.append(recipient)
+                        logger.warning(f"Failed to send message to {recipient}")
+                except Exception as e:
+                    logger.error(f"Error sending message to {recipient}: {e}")
+                    failed_recipients.append(recipient)
+            
+            if failed_recipients:
+                logger.warning(f"Failed to send messages to {len(failed_recipients)} recipients: {failed_recipients}")
+            
+            # Record the initiation time only if the message was sent successfully
+            if success:
+                try:
+                    self.initiated_conversations.append(datetime.now())
+                    logger.info(f"Conversation initiated successfully with {len(recipients) - len(failed_recipients)} recipients")
+                    return True
+                except Exception as e:
+                    logger.error(f"Error recording conversation initiation: {e}")
+                    return True  # Still return True as message was sent successfully
+            else:
+                logger.error("Failed to send message to any recipients")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Unexpected error during conversation initiation: {e}")
+            logger.debug("Conversation initiation error details", exc_info=True)
             return False
-        
-        # Select a topic
-        topic = self.get_topic_for_initiation(discoveries)
-        
-        # Track the selected topic to avoid repetition
-        self._track_selected_topic(topic)
-        
-        # Generate a message
-        message = self.generate_initiation_message(model_manager, topic)
-        
-        # Send the message to all recipients
-        success = False
-        for recipient in recipients:
-            logger.info(f"Initiating conversation with {recipient} on topic: {topic}")
-            # Send the message through all available communication channels
-            result = communication_interface.send_message(recipient, message)
-            if result:
-                success = True
-        
-        # Record the initiation time only if the message was sent successfully
-        if success:
-            self.initiated_conversations.append(datetime.now())
-            return True
-        
-        return False

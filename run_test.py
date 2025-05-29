@@ -15,7 +15,7 @@ from src.main import SkynetSystem
 from src.config import config
 
 # Logger configuration
-log_dir = os.getenv("LOG_DIR", "/opt/skynet-safe/logs")
+log_dir = os.getenv("LOG_DIR", "./logs")
 log_file_path = os.path.join(log_dir, "skynet_test.log")
 
 # Ensure log directory exists
