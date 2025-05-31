@@ -38,7 +38,7 @@ log_file_path = os.path.join(log_dir, "skynet.log")
 os.makedirs(log_dir, exist_ok=True)
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler(log_file_path),
@@ -65,13 +65,13 @@ class SkynetSystem:
             self.communication = communication_interface.CommunicationInterface(config["COMMUNICATION"])
             
             # Send system notification about model loading
-            self.communication.send_system_message("Model załadowany pomyślnie! System gotowy do pracy.", "INFO")
+            self.communication.send_system_message("Model loaded successfully!", "INFO")
             
         except Exception as e:
             # If model loading fails, still initialize communication to notify about the error
             try:
                 self.communication = communication_interface.CommunicationInterface(config["COMMUNICATION"])
-                self.communication.send_system_message(f"Błąd ładowania modelu: {str(e)}", "CRITICAL")
+                self.communication.send_system_message(f"Loading model error: {str(e)}", "CRITICAL")
             except:
                 pass
             raise
@@ -146,7 +146,7 @@ class SkynetSystem:
 
     def run(self):
         """Run the main system loop."""
-        logger.info("Starting SKYNET-SAFE system...")
+        logger.info("Starting SKYNET-SAFE main loop...")
         
         try:
             while not self.shutdown_requested:
@@ -190,10 +190,10 @@ class SkynetSystem:
                 
         except KeyboardInterrupt:
             logger.info("Stopping SKYNET-SAFE system...")
-            self.communication.send_system_message("System zatrzymywany przez użytkownika.", "WARNING")
+            self.communication.send_system_message("System closed by user.", "WARNING")
         except Exception as e:
             logger.error(f"Error in main system loop: {e}")
-            self.communication.send_system_message(f"Krytyczny błąd systemu: {str(e)}", "CRITICAL")
+            self.communication.send_system_message(f"Critical system error: {str(e)}", "CRITICAL")
             raise
         finally:
             # Always cleanup on exit
@@ -247,7 +247,8 @@ class SkynetSystem:
         
         # Add persona context to system prompt (not as response transformation)
         persona_context = self.persona.get_persona_context()
-        if persona_context:
+        if persona_context and config["PERSONA"].get("enable_persona_in_prompt", False):
+	    logger.info(f"Persona added:{persona_context}")
             # Insert persona context at the beginning of context list
             if isinstance(context, list):
                 context.insert(0, persona_context)
@@ -396,7 +397,7 @@ class SkynetSystem:
         Returns:
             Feedback: "positive", "negative" or "neutral"
         """
-        # Simple implementation - random feedback (in reality would be more complex)
+        # Simple implementation  - TO DO
         feedback_types = ["positive", "neutral", "negative"]
         weights = [0.6, 0.3, 0.1]  # Higher chance of positive feedback
         return random.choices(feedback_types, weights=weights, k=1)[0]

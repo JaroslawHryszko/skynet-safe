@@ -377,7 +377,7 @@ class ConversationInitiator:
         logger.info(f"Selected highest scored persona topic: {selected_topic}")
         return selected_topic
 
-    def generate_initiation_message(self, model_manager: Any, topic: Union[str, Dict[str, Any]]) -> str:
+    def generate_initiation_message(self, model_manager: Any, topic: Union[str, Dict[str, Any]], context: Any, short=False) -> str:
         """Generates a message to initiate conversation.
         
         Args:
@@ -394,15 +394,14 @@ class ConversationInitiator:
             user_prompt = (
                 f"Stwórz naturalny starter rozmowy na temat '{topic_name}'. "
                 f"Bazując na tej informacji: '{topic_content}'. "
-                f"Wygeneruj tylko krótką, naturalną wiadomość otwierającą, która zainteresuje użytkownika tym tematem. "
-                f"Nie wspominaj, że 'znalazłeś informację', ale naturalnie nawiąż do tego tematu. "
+                f"Wygeneruj tylko krótką, naturalną wiadomość otwierającą, która rozpocznie rozmowę."
                 f"Odpowiedz TYLKO wiadomością, bez wyjaśnień czy dodatkowego tekstu."
             )
         else:
             # If we only have a topic name
             user_prompt = (
                 f"Stwórz naturalny starter rozmowy na temat '{topic}'. "
-                f"Wygeneruj tylko krótką, naturalną wiadomość otwierającą, która zainteresuje użytkownika tym tematem. "
+                f"Wygeneruj tylko krótką, naturalną wiadomość otwierającą, która rozpocznie rozmowę."
                 f"Odpowiedz TYLKO wiadomością, bez wyjaśnień czy dodatkowego tekstu."
             )
         
@@ -424,7 +423,7 @@ class ConversationInitiator:
                     break
         
         # Ensure it's not too long (max ~200 characters for a conversation starter)
-        if len(message) > 200:
+        if len(message) > 200 and short:
             # Find the last complete sentence within 200 characters
             truncated = message[:200]
             last_period = truncated.rfind('.')
@@ -437,10 +436,10 @@ class ConversationInitiator:
             else:
                 message = truncated + "..."
         
-        return message if message else "Cześć! Mam dla Ciebie ciekawą informację."
+        return message if message
 
     def initiate_conversation(self, model_manager: Any, communication_interface: Any, 
-                              discoveries: List[Dict[str, Any]], recipients: List[str]) -> bool:
+                              discoveries: List[Dict[str, Any]], recipients: List[str], context: Any, short=False) -> bool:
         """Initiates conversation with users.
         
         Args:
@@ -448,6 +447,8 @@ class ConversationInitiator:
             communication_interface: Communication interface for sending messages
             discoveries: List of discoveries from the internet module
             recipients: List of recipient identifiers
+	    context: guess
+	    short: should answer be shortened?
             
         Returns:
             True if the conversation was initiated, False otherwise
@@ -480,7 +481,7 @@ class ConversationInitiator:
             
             # Generate a message
             try:
-                message = self.generate_initiation_message(model_manager, topic)
+                message = self.generate_initiation_message(model_manager, topic, context, short)
                 if not message:
                     logger.warning("Failed to generate initiation message")
                     return False

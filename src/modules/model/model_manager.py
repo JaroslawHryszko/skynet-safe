@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import re
 
 from src.config.config import MODEL_PROMPT
+from src.config import config
 
 # Import the consolidated cleanup function
 from src.utils.text_cleanup import cleanup_model_output
@@ -170,6 +171,9 @@ class ModelManager:
         # Prepare context for the prompt
         prompt = self._prepare_prompt(query, context)
         
+        # Debug log the complete prompt being sent to the model
+        logger.debug(f"FULL PROMPT SENT TO MODEL:\n{'-'*50}\n{prompt}\n{'-'*50}")
+        
         # Encode the prompt
         input_ids = self.tokenizer.encode(prompt, return_tensors="pt").to(self.model.device)
         
@@ -249,7 +253,7 @@ class ModelManager:
         # If context is empty but not None, it might be an empty list passed as context
         if not context:
             # If context is None or empty list, use basic prompt
-            return f"{MODEL_PROMPT}\n\n{query}\n"
+            return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n{query}\n<|assistant|>\n"
             
         # Check if the first context item is a persona context (added by PersonaManager)
         # or a regular context item (memory, etc.)
@@ -257,7 +261,7 @@ class ModelManager:
             len(context) > 0 and isinstance(context[0], str) and 
             (context[0].strip().startswith("You are ") or context[0].strip().startswith("Jesteś "))
         )
-        if context_starts_with_persona:
+        if context_starts_with_persona and config["PERSONA"].get("enable_persona_in_prompt", False):
             # This is a persona context from PersonaManager
             persona_context = context[0]
             remaining_context = context[1:] if len(context) > 1 else []
