@@ -2,6 +2,7 @@
 
 import random
 import logging
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Union
 
@@ -22,6 +23,7 @@ class ConversationInitiator:
         self.init_probability = config.get("init_probability", 0.3)
         self.topics_of_interest = config.get("topics_of_interest", ["AI", "meta-awareness", "machine learning"])
         self.max_daily_initiations = config.get("max_daily_initiations", 5)
+        self.min_silence_before_initiation = config.get("min_silence_before_initiation", 1800)  # 30 minutes
         
         # History of initiated conversations (timestamps)
         self.initiated_conversations = []
@@ -30,10 +32,16 @@ class ConversationInitiator:
         self.recent_topics = []  # List of (topic_name, timestamp) tuples
         self.max_topic_history = config.get("max_topic_history", 10)  # Remember last 10 topics
         
+        # Track initiated conversations with their context
+        self.initiated_contexts = {}  # {recipient: {"topic": topic, "content": content, "timestamp": time}}
+        
         logger.info(f"Conversation initiator initialized with {self.init_probability=}, topics: {self.topics_of_interest}")
 
-    def should_initiate_conversation(self) -> bool:
+    def should_initiate_conversation(self, last_user_message_time: Optional[float] = None) -> bool:
         """Checks if a conversation should be initiated.
+        
+        Args:
+            last_user_message_time: Timestamp of last message from user (optional)
         
         Returns:
             True if the system should initiate a conversation, False otherwise
@@ -42,6 +50,15 @@ class ConversationInitiator:
         if random.random() > self.init_probability:
             logger.debug("Initiation probability threshold not reached")
             return False
+        
+        # Check if enough time has passed since last user message
+        if last_user_message_time is not None:
+            current_time = time.time()
+            time_since_user_message = current_time - last_user_message_time
+            
+            if time_since_user_message < self.min_silence_before_initiation:
+                logger.debug(f"Too early to initiate - only {time_since_user_message:.0f}s since last user message (need {self.min_silence_before_initiation}s)")
+                return False
         
         # Check if the minimum time since last initiation has passed
         current_time = datetime.now()
@@ -409,7 +426,7 @@ class ConversationInitiator:
         
         # Use the standard model.generate_response() method to maintain consistency
         # This ensures persona, memory, and other context is included
-        message = model_manager.generate_response(user_prompt, context=[])
+        message = model_manager.generate_response(user_prompt, context=context)
         
         # Clean up any potential artifacts or verbose responses
         # Keep only the first sentence/paragraph if the response is too long
@@ -436,10 +453,10 @@ class ConversationInitiator:
             else:
                 message = truncated + "..."
         
-        return message if message
+        return message
 
     def initiate_conversation(self, model_manager: Any, communication_interface: Any, 
-                              discoveries: List[Dict[str, Any]], recipients: List[str], context: Any, short=False) -> bool:
+                              discoveries: List[Dict[str, Any]], recipients: List[str], context: Any, short=False, last_user_message_time: Optional[float] = None) -> bool:
         """Initiates conversation with users.
         
         Args:
@@ -455,7 +472,7 @@ class ConversationInitiator:
         """
         try:
             # Check if we should initiate a conversation
-            if not self.should_initiate_conversation():
+            if not self.should_initiate_conversation(last_user_message_time):
                 logger.debug("Conversation initiation conditions not met")
                 return False
             
@@ -501,6 +518,16 @@ class ConversationInitiator:
                     if result:
                         success = True
                         logger.debug(f"Successfully sent message to {recipient}")
+                        
+                        # Store initiation context for this recipient
+                        self.initiated_contexts[recipient] = {
+                            "topic": topic.get('topic', topic) if isinstance(topic, dict) else topic,
+                            "content": topic.get('content', '') if isinstance(topic, dict) else '',
+                            "initiation_message": message,
+                            "timestamp": datetime.now().timestamp(),
+                            "discovery_data": topic if isinstance(topic, dict) else None
+                        }
+                        logger.debug(f"Stored initiation context for {recipient}")
                     else:
                         failed_recipients.append(recipient)
                         logger.warning(f"Failed to send message to {recipient}")
@@ -528,3 +555,66 @@ class ConversationInitiator:
             logger.error(f"Unexpected error during conversation initiation: {e}")
             logger.debug("Conversation initiation error details", exc_info=True)
             return False
+    
+    def get_initiation_context(self, recipient: str, max_age_hours: int = 24) -> Optional[Dict[str, Any]]:
+        """Get recent initiation context for a recipient.
+        
+        Args:
+            recipient: Recipient identifier
+            max_age_hours: Maximum age of initiation context in hours
+            
+        Returns:
+            Initiation context if found and recent enough, None otherwise
+        """
+        if recipient not in self.initiated_contexts:
+            return None
+            
+        context = self.initiated_contexts[recipient]
+        
+        # Check if context is recent enough
+        current_time = datetime.now().timestamp()
+        context_age_hours = (current_time - context["timestamp"]) / 3600
+        
+        if context_age_hours > max_age_hours:
+            # Clean up old context
+            del self.initiated_contexts[recipient]
+            logger.debug(f"Removed old initiation context for {recipient} (age: {context_age_hours:.1f}h)")
+            return None
+            
+        logger.debug(f"Found recent initiation context for {recipient} (age: {context_age_hours:.1f}h)")
+        return context
+    
+    def format_initiation_context_for_prompt(self, recipient: str) -> List[str]:
+        """Format initiation context for inclusion in conversation prompt.
+        
+        Args:
+            recipient: Recipient identifier
+            
+        Returns:
+            List of context strings for prompt
+        """
+        context = self.get_initiation_context(recipient)
+        if not context:
+            return []
+            
+        prompt_context = []
+        
+        # Add basic initiation info
+        topic = context.get("topic", "")
+        initiation_message = context.get("initiation_message", "")
+        
+        if topic and initiation_message:
+            prompt_context.append(f"Niedawno zainicjowałaś rozmowę na temat: {topic}")
+            prompt_context.append(f"Twoja wiadomość otwierająca była: \"{initiation_message}\"")
+        
+        # Add discovery content if available
+        discovery_data = context.get("discovery_data")
+        if discovery_data and isinstance(discovery_data, dict):
+            content = discovery_data.get("content", "")
+            if content and len(content) > 50:  # Only include substantial content
+                # Truncate content if too long (max 500 chars for context)
+                if len(content) > 500:
+                    content = content[:500] + "..."
+                prompt_context.append(f"Informacje z Internetu na ten temat: {content}")
+        
+        return prompt_context

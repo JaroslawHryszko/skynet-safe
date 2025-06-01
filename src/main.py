@@ -136,6 +136,9 @@ class SkynetSystem:
         # Time of last external evaluation
         self.last_external_evaluation_time = 0
         
+        # Time of last user message (for conversation initiator)
+        self.last_user_message_time = None
+        
         # Load test cases
         self._load_test_cases()
         
@@ -167,6 +170,9 @@ class SkynetSystem:
                     # Update active users list
                     if message["sender"] not in self.active_users:
                         self.active_users.append(message["sender"])
+                    
+                    # Update last user message time for conversation initiator
+                    self.last_user_message_time = time.time()
                     
                     # Process message and generate response
                     response = self.process_message(message)
@@ -239,16 +245,22 @@ class SkynetSystem:
         else:
             logger.warning("Security checks bypassed - SecuritySystemManager disabled")
         
-        # Store in memory
-        self.memory.store_interaction({**message, "content": sanitized_content})
-        
-        # Extract hybrid context from memory (semantic + conversation)
+        # Extract hybrid context from memory (semantic + conversation) BEFORE storing current interaction
         context = self.memory.get_hybrid_context(sanitized_content, self.config["MEMORY"])
+        
+        # Add conversation initiation context if this is a response to an initiated conversation
+        initiation_context = self.conversation_initiator.format_initiation_context_for_prompt(user_id)
+        if initiation_context:
+            logger.info(f"Adding initiation context: {len(initiation_context)} items")
+            if isinstance(context, list):
+                context.extend(initiation_context)
+            else:
+                context = ([context] if context else []) + initiation_context
         
         # Add persona context to system prompt (not as response transformation)
         persona_context = self.persona.get_persona_context()
         if persona_context and config["PERSONA"].get("enable_persona_in_prompt", False):
-	    logger.info(f"Persona added:{persona_context}")
+            logger.info(f"Persona added:{persona_context}")
             # Insert persona context at the beginning of context list
             if isinstance(context, list):
                 context.insert(0, persona_context)
@@ -350,6 +362,9 @@ class SkynetSystem:
         # Development monitoring if enabled
         if self.development_monitor and self.development_monitor.should_run_monitoring():
             self.development_monitor.run_monitoring_cycle(self.model, self.metawareness)
+        
+        # Store interaction in memory AFTER generating response to avoid including current query in context
+        self.memory.store_interaction({**message, "content": sanitized_content})
         
         return personalized_response
 
@@ -459,11 +474,25 @@ class SkynetSystem:
         if self.active_users:
             self._log_task_start("Conversation Initiation")
             try:
+                # Get basic context for conversation initiation (memory + persona)
+                basic_context = self.memory.get_hybrid_context("", self.config["MEMORY"])
+                
+                # Add persona context for initiation
+                persona_context = self.persona.get_persona_context()
+                if persona_context and config["PERSONA"].get("enable_persona_in_prompt", False):
+                    if isinstance(basic_context, list):
+                        basic_context.insert(0, persona_context)
+                    else:
+                        basic_context = [persona_context] + ([basic_context] if basic_context else [])
+                
                 self.conversation_initiator.initiate_conversation(
                     self.model, 
                     self.communication, 
                     self.recent_discoveries, 
-                    self.active_users
+                    self.active_users,
+                    context=basic_context,  # Use memory + persona context for initiation
+                    short=True,  # Keep initiation messages short
+                    last_user_message_time=self.last_user_message_time
                 )
             finally:
                 self._log_task_end("Conversation Initiation")

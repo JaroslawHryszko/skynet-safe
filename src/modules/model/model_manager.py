@@ -168,11 +168,12 @@ class ModelManager:
         else:
             logger.debug(f"No context provided for query: {query[:50]}...")
             
+        logger.info(f"PROMPT BEFORE:\n {query}\n {context}")
         # Prepare context for the prompt
         prompt = self._prepare_prompt(query, context)
         
         # Debug log the complete prompt being sent to the model
-        logger.debug(f"FULL PROMPT SENT TO MODEL:\n{'-'*50}\n{prompt}\n{'-'*50}")
+        logger.info(f"FULL PROMPT SENT TO MODEL:\n{'-'*50}\n{prompt}\n{'-'*50}")
         
         # Encode the prompt
         input_ids = self.tokenizer.encode(prompt, return_tensors="pt").to(self.model.device)
@@ -185,13 +186,36 @@ class ModelManager:
                 "do_sample": self.config.get('do_sample', True),
                 "num_return_sequences": 1,
                 "pad_token_id": self.tokenizer.eos_token_id,
+                "eos_token_id": self.tokenizer.eos_token_id,
                 # All parameters from config with sensible defaults
                 "max_new_tokens": self.config.get('max_new_tokens', 150),
                 "min_length": self.config.get('min_length', 10),
                 "repetition_penalty": self.config.get('repetition_penalty', 1.2),
-                "stop": None,
-                "no_repeat_ngram_size": self.config.get('no_repeat_ngram_size', 3)
+                "no_repeat_ngram_size": self.config.get('no_repeat_ngram_size', 3),
+                # New sampling parameters - use more permissive defaults
+                "top_p": self.config.get('top_p', 0.95),
+                "top_k": self.config.get('top_k', 0),  # 0 = disabled
+                # Add stop sequences to prevent over-generation
+                "early_stopping": True
             }
+            
+            # Handle stop sequences if provided
+            stop_sequences = self.config.get('stop', [])
+            if stop_sequences:
+                logger.debug(f"Processing stop sequences: {stop_sequences}")
+                # Convert stop sequences to token IDs
+                stop_token_ids = []
+                for stop_seq in stop_sequences:
+                    if isinstance(stop_seq, str):
+                        tokens = self.tokenizer.encode(stop_seq, add_special_tokens=False)
+                        if tokens:
+                            stop_token_ids.extend(tokens)
+                
+                if stop_token_ids:
+                    # Remove duplicates and add to existing eos_token_id
+                    existing_stop_ids = [self.tokenizer.eos_token_id] if hasattr(self.tokenizer, 'eos_token_id') else []
+                    all_stop_ids = list(set(existing_stop_ids + stop_token_ids))
+                    gen_kwargs["eos_token_id"] = all_stop_ids
             
             with torch.no_grad():
                 outputs = self.model.generate(
@@ -203,6 +227,13 @@ class ModelManager:
             generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
             # Extract the response from the full generated text
             response = self._extract_response(generated_text, prompt)
+            
+            # Check if response was cut off mid-sentence and try to complete it (if enabled)
+            if self.config.get('enable_sentence_completion', False):
+                response = self._ensure_sentence_completion(response, input_ids, gen_kwargs)
+            
+            # Additional cleanup to prevent over-generation
+            response = self._prevent_over_generation(response)
             
             # Record end time and calculate duration
             end_time = datetime.now()
@@ -268,15 +299,16 @@ class ModelManager:
             
             if remaining_context:
                 # We have both persona context and additional memory context
-                remaining_context_str = "\n".join(f"- {item}" for item in remaining_context)
-                return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{persona_context}\n\nContext:\n{remaining_context_str}\n<|user|>\n{query}\n<|assistant|>\n"
+                remaining_context_str = "\n".join(remaining_context)  # Remove "- " prefix for conversation context
+                return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{persona_context}\n\n{remaining_context_str}\n<|user|>\n{query}\n<|assistant|>\n"
             else:
                 # We only have persona context, no additional memory context
                 return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{persona_context}\n<|user|>\n{query}\n<|assistant|>\n"
         else:
             # This is regular context, not persona context
-            context_str = "\n".join(f"- {item}" for item in context)
-            return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\nContext:\n{context_str}\n<|user|>\n{query}\n<|assistant|>\n"
+            # Special handling for conversation context (Tata:/Juno: format)
+            context_str = "\n".join(context)  # Remove "- " prefix for conversation context
+            return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{context_str}\n<|user|>\n{query}\n<|assistant|>\n"
     
     def _extract_response(self, generated_text: str, prompt: str) -> str:
         """Extract response from the full generated text.
@@ -512,3 +544,182 @@ class ModelManager:
             logger.info(f"Significant cleanup: {original_length} chars -> {len(cleaned_text)} chars")
         
         return cleaned_text
+    
+    def _prevent_over_generation(self, response: str) -> str:
+        """Prevent over-generation by detecting when model impersonates the father/user.
+        
+        Args:
+            response: Raw response from the model
+            
+        Returns:
+            Response cut off before impersonation occurs
+        """
+        if not response:
+            return response
+            
+        # Patterns that indicate the model is impersonating Tata/Jarek
+        impersonation_patterns = [
+            r'\btata\s*:',           # "Tata:" or "tata:"
+            r'\bjarek\s*:',          # "Jarek:" or "jarek:"
+            r'\btato\s*:',           # "Tato:" - vocative form
+            r'<\|user\|>',           # User token
+            r'\buser\s*:',           # "User:"
+            r'\b[Tt]ata\s+mówi',     # "Tata mówi" or "tata mówi"
+            r'\b[Jj]arek\s+mówi',    # "Jarek mówi" or "jarek mówi"
+            r'\b[Tt]ata\s+odpowiada', # "Tata odpowiada"
+            r'\b[Jj]arek\s+odpowiada' # "Jarek odpowiada"
+        ]
+        
+        # Split response into lines for analysis
+        lines = response.split('\n')
+        safe_lines = []
+        
+        for line in lines:
+            # Check if this line contains impersonation
+            line_lower = line.lower()
+            found_impersonation = False
+            
+            for pattern in impersonation_patterns:
+                if re.search(pattern, line, re.IGNORECASE):
+                    logger.warning(f"Detected impersonation pattern in response: {pattern}")
+                    found_impersonation = True
+                    break
+            
+            if found_impersonation:
+                # Stop here - don't include this line or any following lines
+                break
+                
+            safe_lines.append(line)
+        
+        # Rejoin the safe lines
+        result = '\n'.join(safe_lines).strip()
+        
+        # Final check: if the response contains any form of dialogue attribution to Tata/Jarek
+        # even within sentences, cut it off
+        for pattern in impersonation_patterns:
+            match = re.search(pattern, result, re.IGNORECASE)
+            if match:
+                # Cut off everything from the impersonation pattern onwards
+                result = result[:match.start()].strip()
+                logger.warning(f"Cut off response at impersonation pattern: {pattern}")
+                break
+        
+        return result
+    
+    def _ensure_sentence_completion(self, response: str, original_input_ids: torch.Tensor, gen_kwargs: dict) -> str:
+        """Ensure response ends at a natural sentence boundary.
+        
+        Args:
+            response: Generated response that might be cut off
+            original_input_ids: Original input token IDs
+            gen_kwargs: Generation kwargs used
+            
+        Returns:
+            Response completed to sentence boundary if needed
+        """
+        if not response.strip():
+            return response
+            
+        # Check if response ends mid-sentence (no proper punctuation)
+        last_char = response.rstrip()[-1] if response.rstrip() else ""
+        sentence_endings = ['.', '!', '?', ':', ';']
+        
+        # If it already ends properly, return as-is
+        if last_char in sentence_endings:
+            logger.debug("Response already ends with proper punctuation")
+            return response
+            
+        # Check if it ends with incomplete word or thought
+        words = response.strip().split()
+        if len(words) < 3:  # Too short to analyze or complete
+            return response
+            
+        logger.debug(f"Response seems cut off mid-sentence, attempting completion")
+        
+        try:
+            # Try to complete the sentence with a small additional generation
+            # Reconstruct full prompt with current response
+            full_prompt_with_response = self._reconstruct_prompt_with_response(original_input_ids, response)
+            
+            # Small additional generation to complete the sentence
+            completion_input_ids = self.tokenizer.encode(full_prompt_with_response, return_tensors="pt").to(self.model.device)
+            
+            # Use very limited generation for completion
+            completion_kwargs = gen_kwargs.copy()
+            max_completion_tokens = self.config.get('sentence_completion_max_tokens', 20)
+            completion_kwargs["max_new_tokens"] = max_completion_tokens
+            completion_kwargs["do_sample"] = False  # Use greedy for completion
+            completion_kwargs["temperature"] = 0.3  # Low temperature for stable completion
+            completion_kwargs["top_p"] = 0.7  # More focused completion
+            
+            with torch.no_grad():
+                completion_outputs = self.model.generate(
+                    completion_input_ids,
+                    **completion_kwargs
+                )
+            
+            # Decode the completion
+            full_completion = self.tokenizer.decode(completion_outputs[0], skip_special_tokens=True)
+            
+            # Extract only the new part (after the original response)
+            original_length = len(full_prompt_with_response)
+            if len(full_completion) > original_length:
+                additional_text = full_completion[original_length:].strip()
+                
+                # Find the first sentence ending in the additional text
+                completion_end = -1
+                for i, char in enumerate(additional_text):
+                    if char in sentence_endings:
+                        completion_end = i + 1
+                        break
+                
+                if completion_end > 0:
+                    # Add the completion up to the sentence ending
+                    sentence_completion = additional_text[:completion_end]
+                    completed_response = response + sentence_completion
+                    logger.debug(f"Completed sentence with: '{sentence_completion}'")
+                    return completed_response
+                else:
+                    # If no sentence ending found in short completion, add a period
+                    if len(additional_text.strip()) > 0:
+                        # Only add text if it seems like a reasonable completion
+                        words_in_addition = additional_text.strip().split()
+                        if len(words_in_addition) <= 5:  # Only short completions
+                            completed_response = response + " " + additional_text.strip() + "."
+                            logger.debug(f"Completed and added period: '{additional_text.strip()}'")
+                            return completed_response
+                    
+                    # Fallback: just add period
+                    logger.debug("No good completion found, adding period")
+                    return response.rstrip() + "."
+            else:
+                # Completion didn't add anything useful, add a period
+                logger.debug("Completion didn't extend text, adding period")
+                return response.rstrip() + "."
+                
+        except Exception as e:
+            logger.warning(f"Error during sentence completion: {e}")
+            # Fallback: just add a period if response doesn't end with punctuation
+            if response.rstrip() and response.rstrip()[-1] not in sentence_endings:
+                return response.rstrip() + "."
+            return response
+    
+    def _reconstruct_prompt_with_response(self, original_input_ids: torch.Tensor, response: str) -> str:
+        """Reconstruct the full prompt with the generated response for continuation.
+        
+        Args:
+            original_input_ids: Original input token IDs
+            response: Generated response so far
+            
+        Returns:
+            Full text for continuation
+        """
+        try:
+            # Decode original prompt
+            original_prompt = self.tokenizer.decode(original_input_ids[0], skip_special_tokens=True)
+            # Combine with response
+            return original_prompt + response
+        except Exception as e:
+            logger.warning(f"Error reconstructing prompt: {e}")
+            # Fallback: just return response (will be less accurate but won't crash)
+            return response

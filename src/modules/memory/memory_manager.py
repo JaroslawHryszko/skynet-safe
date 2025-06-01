@@ -283,13 +283,13 @@ class MemoryManager:
         return self.retrieve_last_interactions(n)
     
     def get_conversation_context(self, n_pairs: int = 5) -> List[str]:
-        """Pobierz ostatnie N par Q&A jako prosty kontekst konwersacyjny.
+        """Pobierz ostatnie N wypowiedzi Juno jako kontekst konwersacyjny.
         
         Args:
-            n_pairs: Liczba par pytanie-odpowiedź do pobrania
+            n_pairs: Liczba ostatnich wypowiedzi Juno do pobrania
             
         Returns:
-            Lista stringów z kontekstem konwersacyjnym w formacie Q: ... A: ...
+            Lista stringów z wypowiedziami Juno (od najstarszej do najnowszej)
         """
         try:
             recent_interactions = self.retrieve_last_interactions(n=n_pairs)
@@ -298,18 +298,15 @@ class MemoryManager:
             if recent_interactions:
                 logger.debug(f"Building conversation context from {len(recent_interactions)} interactions")
                 
-                for interaction in recent_interactions:
-                    # Dodaj pytanie użytkownika
-                    user_content = interaction.get('content', '')
-                    if user_content:
-                        context.append(f"Previous Q: {user_content}")
-                    
-                    # Dodaj odpowiedź systemu jeśli istnieje
+                # Zbierz tylko odpowiedzi Juno, odwróć kolejność (najstarsza -> najnowsza)
+                juno_responses = []
+                for interaction in reversed(recent_interactions):  # Odwróć żeby mieć od najstarszej
                     system_response = interaction.get('response', '')
                     if system_response:
-                        context.append(f"Previous A: {system_response}")
+                        juno_responses.append(system_response)
                 
-                logger.debug(f"Generated {len(context)} conversation context items")
+                context = juno_responses
+                logger.debug(f"Generated {len(context)} Juno response context items")
             else:
                 logger.debug("No recent interactions found for conversation context")
             
@@ -353,9 +350,8 @@ class MemoryManager:
                     conversation_context = self.get_conversation_context(n_pairs=max_pairs)
                     
                     if conversation_context:
-                        # Dodaj separator dla czytelności
-                        if context:  # Jeśli już mamy semantic context
-                            context.append("--- Recent Conversation ---")
+                        # Dodaj naturalny opis kontekstu
+                        context.append("Do tej pory wypowiedziałaś następujące kwestie:")
                         context.extend(conversation_context)
                         logger.debug(f"Added {len(conversation_context)} conversation context items")
             
