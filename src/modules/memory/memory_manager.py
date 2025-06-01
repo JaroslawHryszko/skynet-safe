@@ -351,8 +351,7 @@ class MemoryManager:
                     
                     if conversation_context:
                         # Dodaj naturalny opis kontekstu
-                        context.append("Do tej pory wypowiedziałaś następujące kwestie:")
-                        context.extend(conversation_context)
+                        context.append("Twoje poprzednie wypowiedzi: " + " ... ".join(conversation_context))
                         logger.debug(f"Added {len(conversation_context)} conversation context items")
             
             logger.debug(f"Generated hybrid context with {len(context)} total items")

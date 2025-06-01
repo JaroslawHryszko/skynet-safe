@@ -302,6 +302,5 @@ def test_save_and_load_state(memory_config, setup_teardown_memory):
             # Test zapisywania stanu
             manager.save_state()
             
-            # Sprawdź, czy zapisano stan dla obu kolekcji
-            mock_interactions_collection.persist.assert_called_once()
-            mock_reflections_collection.persist.assert_called_once()
+            # Sprawdź, czy zapisano stan bazy danych
+            mock_chroma.return_value.persist.assert_called_once()
