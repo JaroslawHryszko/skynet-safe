@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const interactionsCount = document.getElementById('interactions-count');
     
     // Other elements
-    const traitsList = document.getElementById('traits-list');
     const issuesList = document.getElementById('issues-list');
     const activitiesTimeline = document.getElementById('activities-timeline');
     const aiName = document.getElementById('ai-name');
@@ -67,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 updateSystemStatus(data.system);
                 updatePersonaState(data.persona);
-                updatePersonalityTraits(data.persona.traits);
+                updateLatestPrompt(data.latest_prompt);
                 updateRecentTasks(data.tasks);
                 updateRecentActivities(data.recent_activities);
                 updateTimestamp();
@@ -163,33 +162,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function updatePersonalityTraits(traits) {
-        if (!traits || Object.keys(traits).length === 0) {
-            traitsList.innerHTML = '<div class="loading">No traits data available</div>';
+    function updateLatestPrompt(prompt) {
+        const promptContent = document.getElementById('prompt-content');
+        if (!promptContent) return;
+
+        if (!prompt) {
+            promptContent.innerHTML = '<div class="no-data">📝 No recent prompt available</div>';
             return;
         }
-        
-        let traitsHTML = '';
-        Object.entries(traits).forEach(([trait, value]) => {
-            // Show absolute values for personality traits
-            const displayValue = typeof value === 'number' ? value.toFixed(2) : value;
-            
-            // For visual bar, normalize to 0-10 scale for display
-            const normalizedPercentage = Math.min(Math.max((value / 10) * 100, 0), 100);
-            const level = value >= 7 ? 'high' : value >= 4 ? 'medium' : 'low';
-            
-            traitsHTML += `
-                <div class="trait-item">
-                    <div class="trait-name">${trait.charAt(0).toUpperCase() + trait.slice(1)}</div>
-                    <div class="trait-bar">
-                        <div class="trait-fill ${level}" style="width: ${normalizedPercentage}%"></div>
-                        <span class="trait-value">${displayValue}</span>
-                    </div>
-                </div>
-            `;
-        });
-        
-        traitsList.innerHTML = traitsHTML;
+
+        // Display the prompt content with proper formatting
+        promptContent.textContent = prompt;
     }
     
     function updateRecentTasks(tasks) {

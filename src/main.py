@@ -176,9 +176,12 @@ class SkynetSystem:
                     
                     # Process message and generate response
                     response = self.process_message(message)
+                    logger.info(f"MAIN: Generated response: '{response[:50]}...'")
                     
                     # Store response in memory
+                    logger.info(f"MAIN: About to call store_response")
                     self.memory.store_response(response, message)
+                    logger.info(f"MAIN: store_response completed")
                     
                     # Send response
                     self.communication.send_message(message["sender"], response)

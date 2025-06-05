@@ -174,14 +174,14 @@ def parse_interaction_log():
     return interactions[-5:]  # Return only the 5 most recent interactions
 
 def parse_recent_activities():
-    """Parse logs for the six most recent activities with proper JSON parsing and clickable entries"""
+    """Parse logs for all activities with proper JSON parsing and clickable entries"""
     activities = []
     
     # Parse llm_interactions.log for interaction entries first
     if os.path.exists(INTERACTION_LOG):
         try:
             with open(INTERACTION_LOG, 'r') as f:
-                lines = f.readlines()[-50:]  # Check last 50 lines for interaction data
+                lines = f.readlines()[-200:]  # Check last 200 lines for interaction data
                 
                 for line in lines:
                     try:
@@ -197,13 +197,22 @@ def parse_recent_activities():
                                 try:
                                     if 'T' in timestamp_str:
                                         dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                                        # Extract milliseconds from ISO format
+                                        if '.' in timestamp_str:
+                                            microsecond_part = timestamp_str.split('.')[1]
+                                            # Remove timezone suffix and take first 3 digits
+                                            microsecond_str = ''.join(filter(str.isdigit, microsecond_part))[:6]
+                                            milliseconds = str(int(microsecond_str[:3]) if len(microsecond_str) >= 3 else 0).zfill(3)
+                                        else:
+                                            milliseconds = "000"
                                     else:
                                         dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                                        milliseconds = "000"
                                     
                                     time_str = dt.strftime('%H:%M')
                                     
-                                    # Create log ID for clickable entry
-                                    log_id = f"{dt.strftime('%Y%m%d_%H%M%S')}_{dt.microsecond//1000:03d}"
+                                    # Create log ID for clickable entry (consistent with regex method)
+                                    log_id = f"{dt.strftime('%Y%m%d_%H%M%S')}_{milliseconds}"
                                     
                                     # Extract query/prompt for summary
                                     summary = ""
@@ -283,21 +292,26 @@ def parse_recent_activities():
         except Exception as e:
             print(f"Error parsing interaction log for activities: {e}")
     
-    # Parse skynet.log for system activities (non-clickable)
+    # Parse skynet.log for system activities (clickable)
     if os.path.exists(SYSTEM_LOG):
         try:
             with open(SYSTEM_LOG, 'r') as f:
-                lines = f.readlines()[-50:]  # Check last 50 lines for system data
+                lines = f.readlines()[-200:]  # Check last 200 lines for system data
                 
                 for line in lines:
                     # Extract timestamp and message - support multiple log formats
-                    match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?)\s+.*?(?:INFO|ERROR|WARNING|DEBUG)\s+-\s+(.*)', line)
+                    match = re.search(r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?)\s+-\s+.*?\s+-\s+(INFO|ERROR|WARNING|DEBUG)\s+-\s+(.*)', line)
                     if not match:
                         match = re.search(r'\[(.*?)\].*?(?:INFO|ERROR|WARNING|DEBUG)\s+-\s+(.*)', line)
                     
                     if match:
                         timestamp_str = match.group(1)
-                        message = match.group(2).strip()
+                        if len(match.groups()) >= 3:
+                            # New format: timestamp - logger - level - message
+                            message = match.group(3).strip()
+                        else:
+                            # Old format: timestamp level - message
+                            message = match.group(2).strip()
                         
                         # Skip empty messages
                         if not message:
@@ -330,8 +344,15 @@ def parse_recent_activities():
                             if len(display_message) > 60:
                                 display_message = display_message[:57] + '...'
                             
-                            # No ID for system log entries (non-clickable)
+                            # Add ID for system log entries (make them clickable)
+                            if ',' in timestamp_str:
+                                milliseconds = timestamp_str.split(',')[1][:3]
+                            else:
+                                milliseconds = "000"
+                            log_id = f"{dt.strftime('%Y%m%d_%H%M%S')}_{milliseconds}"
+                            
                             activities.append({
+                                "id": log_id,  # This makes system entries clickable too
                                 "timestamp": timestamp_str,
                                 "time_display": time_str,
                                 "summary": display_message,
@@ -348,7 +369,7 @@ def parse_recent_activities():
         except Exception as e:
             print(f"Error parsing system log for activities: {e}")
     
-    # Sort by timestamp and return last 6
+    # Sort by timestamp and return all
     try:
         activities.sort(key=lambda x: x.get('sort_time', datetime.min), reverse=True)
     except Exception as e:
@@ -358,7 +379,7 @@ def parse_recent_activities():
     for activity in activities:
         activity.pop('sort_time', None)
     
-    return activities[:6]
+    return activities
 
 def parse_log_entry(log_line):
     """Parse a single log entry and extract structured information"""
@@ -413,60 +434,140 @@ def get_recent_interactions():
     return list(reversed(interactions))
 
 def get_log_entry_by_id(log_id):
-    """Get detailed log entry by ID - supports both JSON and regular log entries"""
-    if not os.path.exists(INTERACTION_LOG):
-        return None
-        
-    try:
-        with open(INTERACTION_LOG, 'r') as f:
-            lines = f.readlines()
-            
-        for line in lines:
-            try:
-                # First try JSON parsing
-                if '{' in line and '}' in line:
-                    json_part = line[line.find('{'):line.rfind('}')+1]
-                    log_data = json.loads(json_part)
+    """Get detailed log entry by ID - simple and direct approach"""
+    from datetime import datetime
+    import re
+    import json
+    
+    # Check both logs
+    log_files = []
+    if os.path.exists(INTERACTION_LOG):
+        log_files.append(INTERACTION_LOG)
+    if os.path.exists(SYSTEM_LOG):
+        log_files.append(SYSTEM_LOG)
+    
+    for log_file in log_files:
+        try:
+            with open(log_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
                     
-                    if 'timestamp' in log_data:
-                        timestamp_str = log_data['timestamp']
-                        
-                        # Parse ISO timestamp
+                    # Try JSON first (interaction log)
+                    if '{' in line and '}' in line:
                         try:
-                            if 'T' in timestamp_str:
-                                dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-                            else:
-                                dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
-                            
-                            # Create log ID
-                            entry_log_id = f"{dt.strftime('%Y%m%d_%H%M%S')}_{dt.microsecond//1000:03d}"
-                            
-                            if entry_log_id == log_id:
-                                # Format full message from JSON data
-                                full_message = json.dumps(log_data, indent=2, ensure_ascii=False)
+                            json_part = line[line.find('{'):line.rfind('}')+1]
+                            log_data = json.loads(json_part)
+                            if 'timestamp' in log_data:
+                                timestamp_str = log_data['timestamp']
+                                if 'T' in timestamp_str:
+                                    dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                                    if '.' in timestamp_str:
+                                        ms_part = timestamp_str.split('.')[1]
+                                        ms_digits = ''.join(filter(str.isdigit, ms_part))[:3]
+                                        milliseconds = ms_digits.ljust(3, '0')
+                                    else:
+                                        milliseconds = "000"
+                                else:
+                                    dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                                    milliseconds = "000"
                                 
-                                return {
-                                    'id': entry_log_id,
-                                    'timestamp': dt,
-                                    'time_str': dt.strftime('%H:%M:%S'),
-                                    'level': log_data.get('level', 'INFO'),
-                                    'summary': f"LLM Interaction: {log_data.get('query', log_data.get('prompt', 'N/A'))[:60]}...",
-                                    'full_message': full_message
-                                }
-                        except Exception as e:
-                            print(f"Error parsing JSON timestamp for ID matching: {e}")
-                            continue
-            except json.JSONDecodeError:
-                # Fallback to regex parsing for regular log entries
-                parsed = parse_log_entry(line)
-                if parsed and parsed['id'] == log_id:
-                    return parsed
-                continue
+                                entry_id = f"{dt.strftime('%Y%m%d_%H%M%S')}_{milliseconds}"
+                                if entry_id == log_id:
+                                    return {
+                                        'id': entry_id,
+                                        'timestamp': dt,
+                                        'time_str': dt.strftime('%H:%M:%S'),
+                                        'level': 'INFO',
+                                        'summary': f"LLM: {log_data.get('query', 'N/A')[:60]}...",
+                                        'full_message': json.dumps(log_data, indent=2)
+                                    }
+                        except:
+                            pass
                     
-    except Exception as e:
-        print(f"Error reading log entry: {e}")
+                    # Try system log format: TIMESTAMP - LOGGER - LEVEL - MESSAGE
+                    parts = line.split(' - ')
+                    if len(parts) >= 4:
+                        timestamp_str = parts[0]
+                        level = parts[2]
+                        message = ' - '.join(parts[3:])
+                        
+                        if level in ['INFO', 'ERROR', 'WARNING', 'DEBUG']:
+                            try:
+                                if ',' in timestamp_str:
+                                    dt = datetime.strptime(timestamp_str.split(',')[0], '%Y-%m-%d %H:%M:%S')
+                                    milliseconds = timestamp_str.split(',')[1][:3]
+                                else:
+                                    dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                                    milliseconds = "000"
+                                
+                                entry_id = f"{dt.strftime('%Y%m%d_%H%M%S')}_{milliseconds}"
+                                if entry_id == log_id:
+                                    summary = message[:80] + '...' if len(message) > 80 else message
+                                    return {
+                                        'id': entry_id,
+                                        'timestamp': dt,
+                                        'time_str': dt.strftime('%H:%M:%S'),
+                                        'level': level,
+                                        'summary': summary,
+                                        'full_message': message
+                                    }
+                            except:
+                                pass
+        except Exception as e:
+            continue
     
     return None
+
+def get_latest_prompt():
+    """Get the latest full prompt from the logs"""
+    import re
+    
+    if not os.path.exists(SYSTEM_LOG):
+        return None
+    
+    try:
+        with open(SYSTEM_LOG, 'r') as f:
+            lines = f.readlines()
+        
+        # Search backwards for the latest "FULL PROMPT SENT TO MODEL:" entry
+        for i, line in enumerate(reversed(lines)):
+            if "FULL PROMPT SENT TO MODEL:" in line:
+                line_index = len(lines) - 1 - i
+                prompt_lines = []
+                
+                # Start collecting lines after the "FULL PROMPT SENT TO MODEL:" line
+                collecting = False
+                for j in range(line_index + 1, len(lines)):
+                    next_line = lines[j].rstrip()  # Keep original formatting but remove trailing whitespace
+                    
+                    # Skip the separator line with dashes
+                    if next_line.startswith('--'):
+                        if not collecting:
+                            collecting = True  # Start collecting after first separator
+                        continue
+                    
+                    # Stop if we hit another log entry (timestamp) or warning/info line
+                    if re.match(r'^\d{4}-\d{2}-\d{2}', next_line) or 'attention mask' in next_line.lower():
+                        break
+                    
+                    # If we're collecting, add the line (including empty lines for formatting)
+                    if collecting:
+                        prompt_lines.append(next_line)
+                
+                if prompt_lines:
+                    # Remove trailing empty lines
+                    while prompt_lines and not prompt_lines[-1].strip():
+                        prompt_lines.pop()
+                    
+                    return '\n'.join(prompt_lines)
+                break
+        
+        return None
+    except Exception as e:
+        print(f"Error reading prompt from log: {e}")
+        return None
 
 @app.route('/')
 def index():
@@ -675,7 +776,8 @@ def get_dashboard_data():
             "show_absolute_values": True  # Flag to show absolute values instead of percentages for model metrics
         },
         "tasks": tasks,
-        "recent_activities": parse_recent_activities()
+        "recent_activities": parse_recent_activities(),
+        "latest_prompt": get_latest_prompt()
     })
 
 @app.route('/api/status')

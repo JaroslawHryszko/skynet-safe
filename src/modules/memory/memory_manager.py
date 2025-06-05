@@ -26,6 +26,10 @@ class MemoryManager:
         self.config = config
         logger.info(f"Initializing long-term memory...")
         
+        # Initialize simple conversation history queue
+        self.recent_responses = []  # Simple list to store recent system responses
+        self.max_conversation_pairs = config.get("max_conversation_pairs", 5)
+        
         # Ensure memory directory exists
         os.makedirs(config["memory_path"], exist_ok=True)
         
@@ -102,6 +106,7 @@ class MemoryManager:
             response: System response content
             original_message: Original message that was responded to
         """
+        logger.info(f"STORE_RESPONSE: Called with response='{response[:50]}...', message='{original_message.get('content', '')[:50]}...'")
         try:
             # Generate unique ID for the document
             doc_id = str(uuid.uuid4())
@@ -119,7 +124,7 @@ class MemoryManager:
                 "original_timestamp": original_message.get("timestamp", 0)
             }
             
-            # Add document to interactions collection
+            # Add document to interactions collection (for semantic search)
             self.interactions_collection.add(
                 ids=[doc_id],
                 embeddings=[embedding.tolist()],
@@ -127,7 +132,16 @@ class MemoryManager:
                 metadatas=[metadata]
             )
             
-            logger.debug(f"Stored system response in memory")
+            # Add response to simple conversation queue for conversation context
+            self.recent_responses.append(response)
+            
+            # Keep only the last N responses (rolling window)
+            if len(self.recent_responses) > self.max_conversation_pairs:
+                self.recent_responses.pop(0)  # Remove oldest response
+            
+            logger.info(f"CONVERSATION_QUEUE: Added response to queue. Queue size: {len(self.recent_responses)}")
+            logger.info(f"CONVERSATION_QUEUE: Recent responses: {[resp[:50] + '...' for resp in self.recent_responses]}")
+            logger.debug(f"Stored system response in memory and conversation queue ({len(self.recent_responses)} responses in queue)")
             
         except Exception as e:
             logger.error(f"Error storing response: {e}")
@@ -263,12 +277,20 @@ class MemoryManager:
                        msg.get("metadata", {}).get("original_timestamp") == user_timestamp
                 ]
                 
+                # Ensure we get the system response content, not user query
+                system_response_content = ""
+                if matching_responses:
+                    # Double-check that this is actually a system response
+                    response_msg = matching_responses[0]
+                    if response_msg.get("metadata", {}).get("type") == "system_response":
+                        system_response_content = response_msg.get("content", "")
+                
                 # Create interaction with query and response
                 interaction = {
                     "id": user_msg.get("id"),
-                    "content": content,
+                    "content": content,  # User query
                     "metadata": user_msg.get("metadata", {}),
-                    "response": matching_responses[0].get("content", "") if matching_responses else ""
+                    "response": system_response_content  # System response
                 }
                 grouped_interactions.append(interaction)
             
@@ -283,7 +305,7 @@ class MemoryManager:
         return self.retrieve_last_interactions(n)
     
     def get_conversation_context(self, n_pairs: int = 5) -> List[str]:
-        """Pobierz ostatnie N wypowiedzi Juno jako kontekst konwersacyjny.
+        """Pobierz ostatnie N wypowiedzi Juno jako kontekst konwersacyjny z prostej kolejki.
         
         Args:
             n_pairs: Liczba ostatnich wypowiedzi Juno do pobrania
@@ -292,23 +314,15 @@ class MemoryManager:
             Lista stringów z wypowiedziami Juno (od najstarszej do najnowszej)
         """
         try:
-            recent_interactions = self.retrieve_last_interactions(n=n_pairs)
-            context = []
+            # Get the last n_pairs responses from the simple queue
+            context = self.recent_responses[-n_pairs:] if n_pairs > 0 else self.recent_responses[:]
             
-            if recent_interactions:
-                logger.debug(f"Building conversation context from {len(recent_interactions)} interactions")
-                
-                # Zbierz tylko odpowiedzi Juno, odwróć kolejność (najstarsza -> najnowsza)
-                juno_responses = []
-                for interaction in reversed(recent_interactions):  # Odwróć żeby mieć od najstarszej
-                    system_response = interaction.get('response', '')
-                    if system_response:
-                        juno_responses.append(system_response)
-                
-                context = juno_responses
-                logger.debug(f"Generated {len(context)} Juno response context items")
-            else:
-                logger.debug("No recent interactions found for conversation context")
+            logger.info(f"GET_CONVERSATION_CONTEXT: Requested {n_pairs} responses, queue has {len(self.recent_responses)}, returning {len(context)}")
+            logger.info(f"GET_CONVERSATION_CONTEXT: Full queue: {[resp[:30] + '...' for resp in self.recent_responses]}")
+            logger.debug(f"Retrieved {len(context)} responses from conversation queue")
+            if context:
+                logger.debug(f"First response in context: {context[0][:100]}...")
+                logger.debug(f"Last response in context: {context[-1][:100]}...")
             
             return context
             
@@ -332,28 +346,38 @@ class MemoryManager:
             # Sprawdź strategię kontekstu
             strategy = config.get("context_strategy", "hybrid")
             
-            if strategy in ["semantic", "hybrid"]:
-                # Pobierz kontekst semantyczny
-                max_semantic = config.get("max_semantic_results", 3)
-                semantic_context = self.retrieve_relevant_context(query, n_results=max_semantic)
-                
-                if semantic_context:
-                    context.extend(semantic_context)
-                    logger.debug(f"Added {len(semantic_context)} semantic context items")
+            # Temporarily disable semantic context to test conversation context
+            # if strategy in ["semantic", "hybrid"]:
+            #     # Pobierz kontekst semantyczny
+            #     max_semantic = config.get("max_semantic_results", 3)
+            #     semantic_context = self.retrieve_relevant_context(query, n_results=max_semantic)
+            #     
+            #     if semantic_context:
+            #         context.extend(semantic_context)
+            #         logger.debug(f"Added {len(semantic_context)} semantic context items")
             
             if strategy in ["conversation", "hybrid"]:
                 # Sprawdź czy pamięć konwersacyjna jest włączona
                 conv_config = config.get("conversation_memory", {})
+                logger.info(f"HYBRID_CONTEXT: conv_config enabled={conv_config.get('enabled', True)}, include_in_prompt={conv_config.get('include_in_prompt', True)}")
                 if conv_config.get("enabled", True) and conv_config.get("include_in_prompt", True):
                     
                     max_pairs = config.get("max_conversation_pairs", 5)
+                    logger.info(f"HYBRID_CONTEXT: Requesting {max_pairs} conversation pairs")
                     conversation_context = self.get_conversation_context(n_pairs=max_pairs)
                     
+                    logger.info(f"HYBRID_CONTEXT: Got {len(conversation_context) if conversation_context else 0} conversation items")
                     if conversation_context:
                         # Dodaj naturalny opis kontekstu
-                        context.append("Twoje poprzednie wypowiedzi: " + " ... ".join(conversation_context))
+                        conversation_text = "Twoje poprzednie wypowiedzi:\n" + " ... ".join(conversation_context)
+                        context.append(conversation_text)
+                        logger.info(f"HYBRID_CONTEXT: Added conversation text: {conversation_text[:100]}...")
                         logger.debug(f"Added {len(conversation_context)} conversation context items")
+                        logger.debug(f"Conversation context content: {conversation_text[:200]}...")
+                    else:
+                        logger.info("HYBRID_CONTEXT: No conversation context to add")
             
+            logger.info(f"HYBRID_CONTEXT: Final context has {len(context)} total items")
             logger.debug(f"Generated hybrid context with {len(context)} total items")
             return context
             

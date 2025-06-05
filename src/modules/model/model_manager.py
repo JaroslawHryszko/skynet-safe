@@ -168,15 +168,18 @@ class ModelManager:
         else:
             logger.debug(f"No context provided for query: {query[:50]}...")
             
-        logger.info(f"PROMPT BEFORE:\n {query}\n {context}")
         # Prepare context for the prompt
         prompt = self._prepare_prompt(query, context)
+        logger.info(f"PREPARED PROMPT:\n {prompt}\n Context length: {len(context) if context else 0}")
         
         # Debug log the complete prompt being sent to the model
         logger.info(f"FULL PROMPT SENT TO MODEL:\n{'-'*50}\n{prompt}\n{'-'*50}")
         
         # Encode the prompt
         input_ids = self.tokenizer.encode(prompt, return_tensors="pt").to(self.model.device)
+        
+        # Store input length for proper response extraction
+        input_length = input_ids.shape[1]
         
         # Generate response
         try:
@@ -194,9 +197,8 @@ class ModelManager:
                 "no_repeat_ngram_size": self.config.get('no_repeat_ngram_size', 3),
                 # New sampling parameters - use more permissive defaults
                 "top_p": self.config.get('top_p', 0.95),
-                "top_k": self.config.get('top_k', 0),  # 0 = disabled
-                # Add stop sequences to prevent over-generation
-                "early_stopping": True
+                "top_k": self.config.get('top_k', 0)  # 0 = disabled
+                #"early_stopping": True
             }
             
             # Handle stop sequences if provided
@@ -223,10 +225,21 @@ class ModelManager:
                     **gen_kwargs
                 )
             
-            # Decode the response
-            generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # Extract the response from the full generated text
-            response = self._extract_response(generated_text, prompt)
+            # NEW APPROACH: Extract only the generated tokens (beyond the input)
+            # This prevents including the prompt in the response
+            generated_tokens = outputs[0][input_length:]
+            # Decode only the generated part
+            response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+            
+            # Debug logging to verify the fix
+            logger.debug(f"Input length: {input_length} tokens, Generated length: {len(generated_tokens)} tokens")
+            logger.debug(f"Extracted response (first 100 chars): {response[:100]}...")
+            
+            # If we got an empty response, fall back to the old method for debugging
+            if not response.strip():
+                logger.warning("Empty response from new extraction method, falling back to old method")
+                generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                response = self._extract_response(generated_text, prompt)
             
             # Check if response was cut off mid-sentence and try to complete it (if enabled)
             if self.config.get('enable_sentence_completion', False):
@@ -284,7 +297,7 @@ class ModelManager:
         # If context is empty but not None, it might be an empty list passed as context
         if not context:
             # If context is None or empty list, use basic prompt
-            return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n{query}\n<|assistant|>\n"
+            return f"<|begin_of_text|>\n<|system|>\n{MODEL_PROMPT}\n<|user|>\n{query}\n<|assistant|>\n"
             
         # Check if the first context item is a persona context (added by PersonaManager)
         # or a regular context item (memory, etc.)
@@ -300,15 +313,15 @@ class ModelManager:
             if remaining_context:
                 # We have both persona context and additional memory context
                 remaining_context_str = "\n".join(remaining_context)  # Remove "- " prefix for conversation context
-                return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{persona_context}\n\n{remaining_context_str}\n<|user|>\n{query}\n<|assistant|>\n"
+                return f"<|begin_of_text|>\n<|system|>\n{MODEL_PROMPT}\n\n{persona_context}\n\n{remaining_context_str}\n<|user|>\n{query}\n<|assistant|>\n"
             else:
                 # We only have persona context, no additional memory context
-                return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{persona_context}\n<|user|>\n{query}\n<|assistant|>\n"
+                return f"<|begin_of_text|>\n<|system|>\n{MODEL_PROMPT}\n\n{persona_context}\n<|user|>\n{query}\n<|assistant|>\n"
         else:
             # This is regular context, not persona context
-            # Special handling for conversation context (Tata:/Juno: format)
+            # Special handling for conversation context
             context_str = "\n".join(context)  # Remove "- " prefix for conversation context
-            return f"<|begin_of_text|><|system|>\n{MODEL_PROMPT}\n\n{context_str}\n<|user|>\n{query}\n<|assistant|>\n"
+            return f"<|begin_of_text|>\n<|system|>\n{MODEL_PROMPT}\n\n{context_str}\n<|user|>\n{query}\n<|assistant|>\n"
     
     def _extract_response(self, generated_text: str, prompt: str) -> str:
         """Extract response from the full generated text.
@@ -334,7 +347,7 @@ class ModelManager:
                 if "<|end_of_text|>" in response:
                     response = response.split("<|end_of_text|>")[0].strip()
             elif "Answer (as Lira):" in generated_text:
-                response = generated_text.split("Answer (as Lira):")[1].strip()
+                response = generated_text.split("Answer (as Juno):")[1].strip()
             elif generated_text.startswith(prompt):
                 response = generated_text[len(prompt):].strip()
             else:
